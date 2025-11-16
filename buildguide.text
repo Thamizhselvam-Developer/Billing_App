@@ -1,0 +1,55 @@
+yarn-deduplicate yarn.lock
+cd android
+./gradlew assembleDebug
+android/app/build/outputs/apk/debug/app-debug.apk
+
+
+//clean build  if error 
+./gradlew clean
+
+//production 
+
+Debug APK: It is useful for testing during development. It does not have optimizations and is not signed for production.
+
+Release APK: For a production-ready APK, you would run ./gradlew assembleRelease after setting up a signing configuration in your build.gradle file.
+
+
+//Adb Devices Connect to Mobile on wireless
+
+adb kill-server
+adb start-server
+adb devices            # ensure it shows the device over USB
+adb -s d3a1d19 tcpip 5555   # 5555 is the default and more reliable
+adb connect <phone-ip>:5555
+adb disconnect 192.168.1.8:5555
+
+
+//Login 
+
+
+admin
+sabithakathirvel29@gmail.com
+nisqgVnd
+staff
+sabithakathirel29@gmail.com
+l5npofgW
+student
+thamizhselvam8428@gmail.com
+n598Zppb
+
+
+//if any corrption on files unable to run 
+
+$ rm -rf node_modules
+rm -rf android/.gradle
+rm -rf android/build
+rm -rf ~/.gradle/caches/
+yarn install
+cd android && ./gradlew clean
+cd ..
+npx react-native run-android
+
+
+
+
+//https://chatgpt.com/share/6908a09a-c45c-8005-9a27-5d06c773b678

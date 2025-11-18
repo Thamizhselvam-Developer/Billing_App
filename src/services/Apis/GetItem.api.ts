@@ -5,11 +5,10 @@ import axios from 'axios'
 import { AddProduct } from "../../types_interface/itemMaster/itemComponent.type";
 
 
-export const addNewProduct = async (product: AddProduct) => {
-    console.log(product,"PRODUCT",API_URL)
+export const getProduct = async () => {
+
   try {
-    const response = await axios.post(`${API_URL}api/items/addItem`, product);
-    if(response.data.sucess ==true && response.data.message==='Item processed successfully')
+    const response = await axios.get(`${API_URL}api/get_items`);
     return response.data.data;
   } catch (error: any) {
     console.error('❌ Failed to add product:', error);

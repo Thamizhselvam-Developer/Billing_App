@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -13,84 +13,49 @@ import { Plus, Search, Edit2, Trash2, Package, X } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { addNewProduct } from '../../services/Apis/Additem.api';
 import { AddProduct, Product } from '../../types_interface/itemMaster/itemComponent.type';
+import { getProduct } from '../../services/Apis/GetItem.api';
 
 
 
 const ItemMasterScreen = ({ navigation }: any) => {
-  const [products, setProducts] = useState<Product[]>([
-    {
-      id: '1',
-      name: 'தினை அரிசி',
-      nameEnglish: 'Thinai Arisi',
-      weight: '500g',
-      price: 85,
-    },
-    {
-      id: '2',
-      name: 'வரகு அரிசி',
-      nameEnglish: 'Varagu Arisi',
-      weight: '500g',
-      price: 80,
-    },
-    {
-      id: '3',
-      name: 'சாமை அரிசி',
-      nameEnglish: 'Samai Arisi',
-      weight: '500g',
-      price: 75,
-    },
-    {
-      id: '4',
-      name: 'குதிரைவாலி அரிசி',
-      nameEnglish: 'Kuthiraivali Arisi',
-      weight: '500g',
-      price: 90,
-    },
-    {
-      id: '5',
-      name: 'கருப்பு கவுனி அரிசி',
-      nameEnglish: 'Karuppu Kavuni Arisi',
-      weight: '500g',
-      price: 120,
-    },
-    {
-      id: '6',
-      name: 'மாப்பிள்ளை சம்பா அரிசி',
-      nameEnglish: 'Mappillai Samba Arisi',
-      weight: '500g',
-      price: 110,
-    },
-    {
-      id: '7',
-      name: 'சிவப்பு அரிசி',
-      nameEnglish: 'Sigappu Arisi',
-      weight: '500g',
-      price: 95,
-    },
-  ]);
+  const [products, setProducts] = useState<Product[]>([]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState({
     name: '',
-    nameEnglish: '',
+    name_english: '',
     weight: '500g',
     price: '',
 
   });
+useEffect(()=>{
+  (async()=>{
+  const getItems =await getProduct()
+  setProducts(getItems)
+  })
+  ();
+},[])
+console.log(products.map((item)=>item),"DDDDDDDD")
+const filteredProducts =
+  products &&
+  products.filter((product) => {
+    const english = product.name_english?.toLowerCase() || "";
+    const tamil = product.name || "";
 
-  const filteredProducts = products.filter(
-    (product) =>
-      product.nameEnglish.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.name.includes(searchQuery)
-  );
+    return (
+      english.includes(searchQuery.toLowerCase()) ||
+      tamil.includes(searchQuery)
+    );
+  });
+
 
 const handleAddNew = async () => {
  setIsModalVisible(true)
   const product: AddProduct = {
     name: '',
-    nameEnglish: '',
+    name_english: '',
     weight: '500g',
     price: 0,
   };
@@ -102,7 +67,7 @@ const handleAddNew = async () => {
     setEditingProduct(product);
     setFormData({
       name: product.name,
-      nameEnglish: product.nameEnglish,
+      name_english: product.name_english,
       weight: product.weight,
       price: product.price.toString(),
     });
@@ -115,13 +80,12 @@ const handleAddNew = async () => {
 const handleSave = async () => {
   const newProduct: AddProduct = {
     name: formData.name,
-    nameEnglish: formData.nameEnglish,
+    name_english: formData.name_english,
     weight: formData.weight,
     price: parseFloat(formData.price),
   };
 
   if (editingProduct) {
-    // Update existing product locally (you can also add API call here)
     setProducts(
       products.map((p) =>
         p.id === editingProduct.id
@@ -131,10 +95,8 @@ const handleSave = async () => {
     );
     Alert.alert('Product updated successfully!');
   } else {
-    // Add new product via API
     try {
       const result = await addNewProduct(newProduct);
-      // If your API returns the created product with an ID
       setProducts([...products, result]);
       Alert.alert('Product added successfully!');
     } catch (err) {
@@ -145,7 +107,7 @@ const handleSave = async () => {
   // Reset modal and form
   setIsModalVisible(false);
   setEditingProduct(null);
-  setFormData({ name: '', nameEnglish: '', weight: '500g', price: '' });
+  setFormData({ name: '', name_english: '', weight: '500g', price: '' });
 };
 
 
@@ -196,7 +158,7 @@ const handleSave = async () => {
         </View>
       </View>
 
-      {/* Product List */}
+
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
@@ -222,7 +184,7 @@ const handleSave = async () => {
 
                 <View className="flex-1">
                   <Text className="text-lg font-bold text-gray-800">
-                    {product.nameEnglish}
+                    {product.name_english}
                   </Text>
                   <Text className="text-sm text-gray-500 mt-1">{product.name}</Text>
 
@@ -299,24 +261,34 @@ const handleSave = async () => {
                 <Text className="text-sm font-semibold text-gray-700 mb-2">
                   Product Name (Tamil)
                 </Text>
-                <TextInput
-                  className="bg-gray-100 rounded-xl px-4 py-3 text-base text-gray-800"
-                  placeholder="தினை அரிசி"
-                  value={formData.name}
-                  onChangeText={(text) => setFormData({ ...formData, name: text })}
-                />
+             <TextInput
+  className="bg-gray-100 rounded-xl px-4 py-3 text-base text-gray-800"
+  placeholder="தினை அரிசி"
+  value={formData.name}
+  onChangeText={(text) => {
+    // Tamil Unicode range: \u0B80–\u0BFF
+    const cleaned = text.replace(/[^A-Za-z\u0B80-\u0BFF ]+/g, "");
+    setFormData({ ...formData, name: cleaned });
+  }}
+/>
+
               </View>
 
               <View className="mb-4">
                 <Text className="text-sm font-semibold text-gray-700 mb-2">
                   Product Name (English)
                 </Text>
-                <TextInput
-                  className="bg-gray-100 rounded-xl px-4 py-3 text-base text-gray-800"
-                  placeholder="Thinai Arisi"
-                  value={formData.nameEnglish}
-                  onChangeText={(text) => setFormData({ ...formData, nameEnglish: text })}
-                />
+       <TextInput
+  className="bg-gray-100 rounded-xl px-4 py-3 text-base text-gray-800"
+  placeholder="Thinai Arisi"
+  value={formData.name_english}
+  onChangeText={(text) => {
+    const cleaned = text.replace(/[^A-Za-z\u0B80-\u0BFF ]+/g, "");
+    setFormData({ ...formData, name_english: cleaned });
+  }}
+/>
+
+
               </View>
 
               <View className="mb-4">

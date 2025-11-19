@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Plus, Search, Edit2, Trash2, Package, X } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { addNewProduct } from '../../services/Apis/Additem.api';
+import { addNewProduct, deleteProduct, updateProduct } from '../../services/Apis/Additem.api';
 import { AddProduct, Product } from '../../types_interface/itemMaster/itemComponent.type';
 import { getProduct } from '../../services/Apis/GetItem.api';
 
@@ -27,7 +27,7 @@ const ItemMasterScreen = ({ navigation }: any) => {
     name: '',
     name_english: '',
     weight: '500g',
-    price: '',
+    price: 0,
 
   });
 useEffect(()=>{
@@ -41,7 +41,8 @@ console.log(products.map((item)=>item),"DDDDDDDD")
 const filteredProducts =
   products &&
   products.filter((product) => {
-    const english = product.name_english?.toLowerCase() || "";
+    if (!product) return false; 
+    const english = (product.name_english || "").toLowerCase();
     const tamil = product.name || "";
 
     return (
@@ -69,46 +70,74 @@ const handleAddNew = async () => {
       name: product.name,
       name_english: product.name_english,
       weight: product.weight,
-      price: product.price.toString(),
+      price: product.price,
     });
     setIsModalVisible(true);
   };
 
-  const handleDelete = (id: string) => {
-    setProducts(products.filter((p) => p.id !== id));
-  };
+  // const handleDelete = (id: string) => {
+  //   setProducts(products.filter((p) => p.id !== id));
+  // };
+
 const handleSave = async () => {
   const newProduct: AddProduct = {
     name: formData.name,
     name_english: formData.name_english,
     weight: formData.weight,
-    price: parseFloat(formData.price),
+    price: Number(formData.price),
   };
 
   if (editingProduct) {
-    setProducts(
-      products.map((p) =>
-        p.id === editingProduct.id
-          ? { ...p, ...newProduct }
-          : p
-      )
-    );
-    Alert.alert('Product updated successfully!');
+    try {
+      const updated = await updateProduct(editingProduct.id, newProduct);
+      console.log(updated)
+      const getItem = await getProduct()
+      setProducts(getItem)
+      Alert.alert('Product updated successfully!');
+    } catch (err) {
+      Alert.alert('Failed to update product. Check console.');
+    }
   } else {
     try {
       const result = await addNewProduct(newProduct);
       setProducts([...products, result]);
+      const getItems = await getProduct()
+        setProducts(getItems)
       Alert.alert('Product added successfully!');
     } catch (err) {
       Alert.alert('Failed to add product. Check console.');
     }
   }
 
-  // Reset modal and form
   setIsModalVisible(false);
   setEditingProduct(null);
-  setFormData({ name: '', name_english: '', weight: '500g', price: '' });
+  setFormData({ name: '', name_english: '', weight: '500g', price: 0});
 };
+
+const handleDelete = async (id: string) => {
+  Alert.alert(
+    'Delete Product',
+    'Are you sure you want to delete this product?',
+    [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteProduct(id);
+            const gettem =await getProduct()
+            setProducts(gettem)
+            Alert.alert('Product deleted successfully!');
+          } catch (err) {
+            Alert.alert('Failed to delete product. Check console.');
+          }
+        },
+      },
+    ]
+  );
+};
+
 
 
   const getStockColor = (stock: number) => {
@@ -307,8 +336,8 @@ const handleSave = async () => {
                   className="bg-gray-100 rounded-xl px-4 py-3 text-base text-gray-800"
                   placeholder="85"
                   keyboardType="numeric"
-                  value={formData.price}
-                  onChangeText={(text) => setFormData({ ...formData, price: text })}
+                  value={formData.price.toString()}
+                  onChangeText={(text) => setFormData({ ...formData, price:  Number(text)  })}
                 />
               </View>
 

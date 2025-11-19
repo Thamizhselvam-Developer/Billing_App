@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,39 +7,32 @@ import {
   ScrollView,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import {
   Plus,
   Trash2,
   User,
   Phone,
-  Mail,
   Package,
   Save,
   FileText,
   Calendar,
 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { getProduct } from '../../services/Apis/GetItem.api';
 
-interface BillItem {
-  id: string;
-  itemName: string;
-  quantity: number;
-  unitPrice: number;
-  amount: number;
-}
+import { AddProduct } from '../../types_interface/itemMaster/itemComponent.type';
+import { createBill, getNextInvoiceNumber } from '../../services/Apis/Bill.api';
+import { BillItem, CustomerDetails } from '../../types_interface/Bill/Bill.type';
 
-interface CustomerDetails {
-  name: string;
-  phone: string;
-  email: string;
-  address: string;
-}
+
 
 const CreateBillScreen = ({ navigation }: any) => {
   const companyDetails = {
     name: 'NETHRA FOOD PRODUCTS',
-    address: '33, Bharathidasen Street, Mutharayarpalayam,\nPuducherry - 605003',
+    address:
+      '33, Bharathidasen Street, Mutharayarpalayam,\nPuducherry - 605003',
     phone: '9688537216',
     email: 'nethrafoodproducts@gmail.com',
     whatsapp: '9688537216',
@@ -53,20 +46,15 @@ const CreateBillScreen = ({ navigation }: any) => {
     accountHolder: 'P SIVA',
   };
 
-  const availableProducts = [
-    { name: 'Thinai Arisi 500g', price: 85 },
-    { name: 'Varagu Arisi 500g', price: 80 },
-    { name: 'Samai Arisi 500g', price: 75 },
-    { name: 'Kuthiraivali Arisi 500g', price: 90 },
-    { name: 'Karuppu Kavuni Arisi 500g', price: 120 },
-    { name: 'Mappillai Samba Arisi 500g', price: 110 },
-    { name: 'Sigappu Arisi 500g', price: 95 },
-  ];
-
-  const [invoiceNo, setInvoiceNo] = useState(`INV${Date.now().toString().slice(-6)}`);
-  const [invoiceDate, setInvoiceDate] = useState(
-    new Date().toLocaleDateString('en-GB')
+  const [invoiceNo, setInvoiceNo] = useState(
+    `INV${Date.now().toString().slice(-6)}`,
   );
+  const [invoiceDate, setInvoiceDate] = useState(
+    new Date().toLocaleDateString('en-GB'),
+  );
+  const [availableProducts, setAvailableProducts] = useState<AddProduct[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [customer, setCustomer] = useState<CustomerDetails>({
     name: '',
@@ -74,54 +62,90 @@ const CreateBillScreen = ({ navigation }: any) => {
     email: '',
     address: '',
   });
-
+  
   const [billItems, setBillItems] = useState<BillItem[]>([
     {
       id: '1',
+      itemId: 0,
       itemName: '',
+      englishItemName: '',
       quantity: 1,
       unitPrice: 0,
       amount: 0,
+      weight: '',
     },
   ]);
 
-  const [showProductPicker, setShowProductPicker] = useState<string | null>(null);
+  const [showProductPicker, setShowProductPicker] = useState<string | null>(
+    null,
+  );
+
+  // Fetch products and next invoice number on mount
+  useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  const loadInitialData = async () => {
+    setIsLoading(true);
+    try {
+      const products = await getProduct();
+      setAvailableProducts(products);
+
+      try {
+        const nextInvoice = await getNextInvoiceNumber();
+        setInvoiceNo(nextInvoice);
+      } catch (err) {
+        console.log('Using client-side invoice generation');
+      }
+    } catch (err) {
+      console.error('Error loading initial data:', err);
+      Alert.alert('Error', 'Failed to load products. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const addNewItem = () => {
     const newItem: BillItem = {
       id: Date.now().toString(),
+      itemId: 0,
       itemName: '',
+      englishItemName: '',
       quantity: 1,
       unitPrice: 0,
       amount: 0,
+      weight: '',
     };
     setBillItems([...billItems, newItem]);
   };
 
   const removeItem = (id: string) => {
     if (billItems.length > 1) {
-      setBillItems(billItems.filter((item) => item.id !== id));
+      setBillItems(billItems.filter(item => item.id !== id));
     }
   };
 
-  const updateItem = (id: string, field: keyof BillItem, value: any) => {
-    setBillItems(
-      billItems.map((item) => {
-        if (item.id === id) {
-          const updated = { ...item, [field]: value };
-          if (field === 'quantity' || field === 'unitPrice') {
-            updated.amount = updated.quantity * updated.unitPrice;
-          }
-          return updated;
-        }
-        return item;
+  const selectProduct = (itemId: string, product: AddProduct) => {
+    const { id, name, name_english, weight, price } = product;
+
+    setBillItems(prevItems =>
+      prevItems.map(item => {
+        if (item.id !== itemId) return item;
+
+        const updatedItem: BillItem = {
+          ...item,
+          itemId: id ?? undefined, 
+          itemName: name,
+          englishItemName: name_english,
+          weight: weight ?? '',
+          unitPrice: price,
+          amount: item.quantity * price,
+        };
+
+        return updatedItem;
       })
     );
-  };
 
-  const selectProduct = (itemId: string, product: { name: string; price: number }) => {
-    updateItem(itemId, 'itemName', product.name);
-    updateItem(itemId, 'unitPrice', product.price);
     setShowProductPicker(null);
   };
 
@@ -129,54 +153,115 @@ const CreateBillScreen = ({ navigation }: any) => {
     return billItems.reduce((sum, item) => sum + item.amount, 0);
   };
 
-  const handleSaveBill = () => {
-    if (!customer.name) {
-      Alert.alert('Error', 'Please enter customer name');
-      return;
+  const validateBillData = (): boolean => {
+    if (!customer.name.trim()) {
+      Alert.alert('Validation Error', 'Please enter customer name');
+      return false;
     }
 
     const hasEmptyItems = billItems.some(
-      (item) => !item.itemName || item.quantity <= 0
+      item => !item.itemName || item.quantity <= 0 || item.itemId === 0,
     );
+
     if (hasEmptyItems) {
-      // Alert.alert('Error', 'Please fill all item details');
+      Alert.alert(
+        'Validation Error',
+        'Please select items and enter valid quantities for all rows'
+      );
+      return false;
+    }
+
+    const total = calculateSubTotal();
+    if (total <= 0) {
+      Alert.alert('Validation Error', 'Bill total must be greater than zero');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSaveBill = async () => {
+    if (!validateBillData()) {
       return;
     }
 
-    Alert.alert(
-      'Bill Created',
-      `Invoice ${invoiceNo} created successfully!\nTotal: ₹${calculateSubTotal()}`,
-      [
-        {
-          text: 'Create Another',
-          onPress: () => {
-            // Reset form
-            setInvoiceNo(`INV${Date.now().toString().slice(-6)}`);
-            setCustomer({ name: '', phone: '', email: '', address: '' });
-            setBillItems([
-              {
-                id: '1',
-                itemName: '',
-                quantity: 1,
-                unitPrice: 0,
-                amount: 0,
-              },
-            ]);
+    setIsSaving(true);
+console.log(billItems,"")
+    try {
+      const response = await createBill(
+        invoiceNo,
+        customer,
+        billItems,
+        invoiceDate
+      );
+
+      console.log('Bill created successfully:', "response");
+
+      Alert.alert(
+        'Success! 🎉',
+        `Invoice response.data.invoice_number created successfully!\n\nTotal: ₹${calculateSubTotal().toFixed(2)}`,
+        [
+          {
+            text: 'Create Another',
+            onPress: () => resetForm(),
           },
-        },
-        {
-          text: 'View Bills',
-          onPress: () => navigation?.navigate('BillHistory'),
-        },
-      ]
-    );
+          {
+            text: 'View Bills',
+            onPress: () => navigation?.navigate('BillHistory', {
+              newBillId: response.data.bill_id
+            }),
+          },
+        ],
+      );
+    } catch (error: any) {
+      console.error('Error creating bill:', error);
+      Alert.alert(
+        'Error',
+        error.message || 'Failed to create bill. Please try again.'
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  const resetForm = async () => {
+    // Get new invoice number
+    try {
+      const nextInvoice = await getNextInvoiceNumber();
+      setInvoiceNo(nextInvoice);
+    } catch {
+      setInvoiceNo(`INV${Date.now().toString().slice(-6)}`);
+    }
+
+    setInvoiceDate(new Date().toLocaleDateString('en-GB'));
+    setCustomer({ name: '', phone: '', email: '', address: '' });
+    setBillItems([
+      {
+        id: '1',
+        itemId: 0,
+        itemName: '',
+        englishItemName: '',
+        quantity: 1,
+        unitPrice: 0,
+        amount: 0,
+        weight: '',
+      },
+    ]);
+  };
+
+  if (isLoading) {
+    return (
+      <SafeAreaView className="flex-1 bg-gray-50 justify-center items-center">
+        <ActivityIndicator size="large" color="#3B82F6" />
+        <Text className="text-gray-600 mt-4">Loading...</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
-      {/* Header */}
       <View className="bg-white shadow-md">
         <View className="px-6 pt-6 pb-4">
           <View className="flex-row items-center justify-between">
@@ -203,12 +288,14 @@ const CreateBillScreen = ({ navigation }: any) => {
         contentContainerStyle={{ paddingBottom: 100 }}
       >
         <View className="px-6 pt-4">
-          {/* Company Info Card */}
+          {/* Company Details */}
           <View className="bg-blue-50 rounded-2xl p-4 mb-4 border border-blue-200">
             <Text className="text-blue-900 font-bold text-base mb-2">
               {companyDetails.name}
             </Text>
-            <Text className="text-blue-700 text-sm">{companyDetails.address}</Text>
+            <Text className="text-blue-700 text-sm">
+              {companyDetails.address}
+            </Text>
             <View className="flex-row flex-wrap mt-2">
               <Text className="text-blue-600 text-xs mr-4">
                 📞 {companyDetails.phone}
@@ -255,7 +342,7 @@ const CreateBillScreen = ({ navigation }: any) => {
                 className="bg-gray-50 rounded-xl px-4 py-3 text-base text-gray-800"
                 placeholder="Customer Name"
                 value={customer.name}
-                onChangeText={(text) => setCustomer({ ...customer, name: text })}
+                onChangeText={text => setCustomer({ ...customer, name: text })}
               />
             </View>
 
@@ -269,28 +356,16 @@ const CreateBillScreen = ({ navigation }: any) => {
                 placeholder="Phone Number"
                 keyboardType="phone-pad"
                 value={customer.phone}
-                onChangeText={(text) => setCustomer({ ...customer, phone: text })}
-              />
-            </View>
-
-            <View className="mb-3">
-              <View className="flex-row items-center mb-2">
-                <Mail color="#8B5CF6" size={18} />
-                <Text className="text-gray-700 font-semibold ml-2">Email</Text>
-              </View>
-              <TextInput
-                className="bg-gray-50 rounded-xl px-4 py-3 text-base text-gray-800"
-                placeholder="Email Address"
-                keyboardType="email-address"
-                value={customer.email}
-                onChangeText={(text) => setCustomer({ ...customer, email: text })}
+                onChangeText={text => setCustomer({ ...customer, phone: text })}
               />
             </View>
 
             <View>
               <View className="flex-row items-center mb-2">
                 <Package color="#F59E0B" size={18} />
-                <Text className="text-gray-700 font-semibold ml-2">Address</Text>
+                <Text className="text-gray-700 font-semibold ml-2">
+                  Address
+                </Text>
               </View>
               <TextInput
                 className="bg-gray-50 rounded-xl px-4 py-3 text-base text-gray-800"
@@ -298,7 +373,9 @@ const CreateBillScreen = ({ navigation }: any) => {
                 multiline
                 numberOfLines={2}
                 value={customer.address}
-                onChangeText={(text) => setCustomer({ ...customer, address: text })}
+                onChangeText={text =>
+                  setCustomer({ ...customer, address: text })
+                }
               />
             </View>
           </View>
@@ -322,7 +399,9 @@ const CreateBillScreen = ({ navigation }: any) => {
                 className="bg-gray-50 rounded-xl p-3 mb-3 border border-gray-200"
               >
                 <View className="flex-row items-center justify-between mb-2">
-                  <Text className="text-gray-700 font-bold">Item {index + 1}</Text>
+                  <Text className="text-gray-700 font-bold">
+                    Item {index + 1}
+                  </Text>
                   {billItems.length > 1 && (
                     <TouchableOpacity
                       onPress={() => removeItem(item.id)}
@@ -333,34 +412,43 @@ const CreateBillScreen = ({ navigation }: any) => {
                   )}
                 </View>
 
-                {/* Item Name - Product Picker */}
                 <View className="mb-2">
-                  <Text className="text-gray-600 text-xs mb-1">Item Name</Text>
+                  <Text className="text-gray-600 text-xs mb-1">Item Name *</Text>
                   <TouchableOpacity
                     onPress={() => setShowProductPicker(item.id)}
                     className="bg-white rounded-lg px-3 py-3 border border-gray-300"
                   >
-                    <Text className={item.itemName ? 'text-gray-800' : 'text-gray-400'}>
+                    <Text
+                      className={
+                        item.itemName ? 'text-gray-800' : 'text-gray-400'
+                      }
+                    >
                       {item.itemName || 'Select Product'}
                     </Text>
                   </TouchableOpacity>
 
-                  {/* Product Picker Dropdown */}
                   {showProductPicker === item.id && (
                     <View className="bg-white rounded-lg mt-1 border border-blue-300 shadow-lg">
                       <ScrollView style={{ maxHeight: 200 }}>
-                        {availableProducts.map((product, idx) => (
-                          <TouchableOpacity
-                            key={idx}
-                            onPress={() => selectProduct(item.id, product)}
-                            className="px-3 py-3 border-b border-gray-100"
-                          >
-                            <Text className="text-gray-800 font-semibold">
-                              {product.name}
-                            </Text>
-                            <Text className="text-green-600 text-xs">₹{product.price}</Text>
-                          </TouchableOpacity>
-                        ))}
+                        {availableProducts.map(
+                          (product: AddProduct, idx: number) => (
+                            <TouchableOpacity
+                              key={idx}
+                              onPress={() => selectProduct(item.id, product)}
+                              className="px-3 py-3 border-b border-gray-100"
+                            >
+                              <Text className="text-gray-800 font-semibold">
+                                {product.name}
+                              </Text>
+                              <Text className="text-gray-600 text-xs">
+                                {product.name_english}
+                              </Text>
+                              <Text className="text-green-600 text-xs font-semibold">
+                                ₹{product.price} {product.weight && `• ${product.weight}`}
+                              </Text>
+                            </TouchableOpacity>
+                          ),
+                        )}
                       </ScrollView>
                     </View>
                   )}
@@ -368,14 +456,21 @@ const CreateBillScreen = ({ navigation }: any) => {
 
                 <View className="flex-row justify-between">
                   <View className="flex-1 mr-2">
-                    <Text className="text-gray-600 text-xs mb-1">Quantity</Text>
+                    <Text className="text-gray-600 text-xs mb-1">Quantity *</Text>
                     <TextInput
                       className="bg-white rounded-lg px-3 py-2 text-gray-800 border border-gray-300"
                       keyboardType="numeric"
                       value={item.quantity.toString()}
-                      onChangeText={(text) =>
-                        updateItem(item.id, 'quantity', parseInt(text) || 0)
-                      }
+                      onChangeText={text => {
+                        const quantity = parseInt(text, 10) || 0;
+                        setBillItems(prev =>
+                          prev.map(b =>
+                            b.id === item.id
+                              ? { ...b, quantity, amount: quantity * b.unitPrice }
+                              : b,
+                          ),
+                        );
+                      }}
                     />
                   </View>
 
@@ -385,9 +480,16 @@ const CreateBillScreen = ({ navigation }: any) => {
                       className="bg-white rounded-lg px-3 py-2 text-gray-800 border border-gray-300"
                       keyboardType="numeric"
                       value={item.unitPrice.toString()}
-                      onChangeText={(text) =>
-                        updateItem(item.id, 'unitPrice', parseFloat(text) || 0)
-                      }
+                      onChangeText={text => {
+                        const unitPrice = parseFloat(text) || 0;
+                        setBillItems(prev =>
+                          prev.map(b =>
+                            b.id === item.id
+                              ? { ...b, unitPrice, amount: b.quantity * unitPrice }
+                              : b,
+                          ),
+                        );
+                      }}
                     />
                   </View>
 
@@ -395,7 +497,7 @@ const CreateBillScreen = ({ navigation }: any) => {
                     <Text className="text-gray-600 text-xs mb-1">Amount</Text>
                     <View className="bg-green-50 rounded-lg px-3 py-2 border border-green-300">
                       <Text className="text-green-700 font-bold">
-                        ₹{item.amount}
+                        ₹{item.amount.toFixed(2)}
                       </Text>
                     </View>
                   </View>
@@ -409,13 +511,13 @@ const CreateBillScreen = ({ navigation }: any) => {
             <View className="flex-row justify-between items-center py-2 border-b border-gray-200">
               <Text className="text-gray-600 font-semibold">Sub Total:</Text>
               <Text className="text-gray-800 font-bold text-lg">
-                ₹{calculateSubTotal()}
+                ₹{calculateSubTotal().toFixed(2)}
               </Text>
             </View>
             <View className="flex-row justify-between items-center py-3">
               <Text className="text-gray-800 font-bold text-lg">Total:</Text>
               <Text className="text-green-600 font-bold text-2xl">
-                ₹{calculateSubTotal()}
+                ₹{calculateSubTotal().toFixed(2)}
               </Text>
             </View>
           </View>
@@ -442,6 +544,7 @@ const CreateBillScreen = ({ navigation }: any) => {
           {/* Save Button */}
           <TouchableOpacity
             onPress={handleSaveBill}
+            disabled={isSaving}
             className="bg-blue-500 rounded-2xl py-4 flex-row items-center justify-center shadow-lg mb-6 active:opacity-80"
             style={{
               elevation: 5,
@@ -449,12 +552,19 @@ const CreateBillScreen = ({ navigation }: any) => {
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.3,
               shadowRadius: 4,
+              opacity: isSaving ? 0.6 : 1,
             }}
           >
-            <Save color="white" size={24} />
-            <Text className="text-white text-lg font-bold ml-2">
-              Save & Generate Bill
-            </Text>
+            {isSaving ? (
+              <ActivityIndicator color="white" size="small" />
+            ) : (
+              <>
+                <Save color="white" size={24} />
+                <Text className="text-white text-lg font-bold ml-2">
+                  Save & Generate Bill
+                </Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>

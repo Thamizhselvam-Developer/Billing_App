@@ -16,3 +16,25 @@ export const addNewProduct = async (product: AddProduct) => {
     // throw error;
   }
 };
+export const updateProduct = async (id: string, data: AddProduct) => {
+  console.log(id,data)
+  try {
+    const response = await axios.patch(`${API_URL}api/item/update/${id}`, data);
+    console.log(response,)
+    return response.data.data;
+  } catch (error) {
+    // console.log(error?.response)
+    throw error;
+  }
+};
+
+
+export const deleteProduct = async (id: string) => {
+  try {
+    const response = await axios.patch(`${API_URL}api/item/delete/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    throw error;
+  }
+};

@@ -7,8 +7,9 @@ export interface Product {
 
 }
 export interface AddProduct{
+  id?:number
   name: string;
   name_english: string;
-  weight: string;
+  weight?: string;
   price: number;
 }

@@ -94,6 +94,7 @@ const CreateBillScreen = ({ navigation }: any) => {
       try {
         const nextInvoice = await getNextInvoiceNumber();
         setInvoiceNo(nextInvoice);
+              setIsLoading(false);
       } catch (err) {
         console.log('Using client-side invoice generation');
       }

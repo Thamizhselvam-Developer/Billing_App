@@ -128,7 +128,7 @@ const formatDateForDB = (dateString: string): string => {
 
 export const getNextInvoiceNumber = async (): Promise<string> => {
   try {
-    const response = await api.get<{ invoice_number: string }>('/bills/next-invoice');
+    const response = await api.get(`${API_URL}api/bills/next-invoice`);
     return response.data.invoice_number;
   } catch (error) {
     console.error('Error fetching next invoice number:', error);

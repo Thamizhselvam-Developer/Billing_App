@@ -4,8 +4,12 @@ import { createNativeStackNavigator, NativeStackNavigationProp } from '@react-na
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../types_interface/navigation.type';
 import HomeScreen from '../../screen/Home/HomeScreen';
-import ItemMasterScreen from '../../screen/ItemMaster/ItemMaster';
 import CreateBillScreen from '../../screen/CreateBillScreen/CreateBillScreen';
+import ItemMaster from '../../screen/ItemMaster/ItemMaster';
+import BillHistory from '../../screen/BillHistory/BillHistory';
+import BillDetails from '../../screen/BillHistory/BillDetails';
+import EditBill from '../../screen/BillHistory/EditBill';
+
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -22,11 +26,25 @@ export function RootStack() {
         />
            <Stack.Screen
           name="ItemMaster"
-          component={ItemMasterScreen}
+          component={ItemMaster}
         />
             <Stack.Screen
           name="CreateBillScreen"
           component={CreateBillScreen}
+        />
+              <Stack.Screen
+          name="BillHistory"
+          component={BillHistory}
+        />
+
+                <Stack.Screen
+          name="BillDetails"
+          component={BillDetails}
+        />
+
+                <Stack.Screen
+          name="EditBill"
+          component={EditBill}
         />
     </Stack.Navigator>
   );

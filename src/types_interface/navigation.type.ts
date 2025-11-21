@@ -3,4 +3,6 @@ export type RootStackParamList = {
   CreateBillScreen: undefined;
   BillHistory: undefined;
   ItemMaster: undefined;
+  BillDetails: any;
+  EditBill: any;
 };

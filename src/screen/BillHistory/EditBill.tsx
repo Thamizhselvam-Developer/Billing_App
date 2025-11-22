@@ -15,10 +15,10 @@ import {
   Save,
   Trash2,
   Plus,
-  Minus,
   Search,
   X,
   Package,
+  ChevronDown,
 } from 'lucide-react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import axios from 'axios';
@@ -35,6 +35,7 @@ interface BillItem {
   price: number;
   amount: number;
   item_name?: string;
+  name_english?: string;
 }
 
 interface Buyer {
@@ -52,11 +53,11 @@ interface Bill {
   buyer: Buyer;
   items: BillItem[];
 }
-type NAvigationProps = NativeStackNavigationProp<
-  RootStackParamList
->;
+
+type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
+
 const EditBill = () => {
-  const navigation = useNavigation<NAvigationProps>();
+  const navigation = useNavigation<NavigationProps>();
   const route = useRoute();
   const { bill } = route.params as { bill: Bill };
 
@@ -78,7 +79,7 @@ const EditBill = () => {
     // Fetch products on mount
     const fetchProducts = async () => {
       try {
-       const res = await getProduct()
+        const res = await getProduct();
         setProducts(res);
       } catch (err) {
         console.error(err);
@@ -94,12 +95,13 @@ const EditBill = () => {
   );
 
   const selectProduct = (itemIndex: number, product: any) => {
-    console.log(product)
+    console.log(product);
     const updatedItems = [...items];
     updatedItems[itemIndex] = {
       ...updatedItems[itemIndex],
       item_id: product.id,
       item_name: product.name,
+      name_english: product.name_english,
       price: product.price,
       amount: product.price * updatedItems[itemIndex].qty,
     };
@@ -178,7 +180,6 @@ const EditBill = () => {
       };
       const res = await axios.patch(`${API_URL}api/bills/update/${bill.id}`, updatedBill);
       if (res.data.success) {
-        // await get
         Toast.success('Bill updated successfully!');
         navigation.navigate('BillHistory');
       }
@@ -274,40 +275,112 @@ const EditBill = () => {
           </View>
 
           {items.map((item, index) => (
-            <View key={index} className="py-3 border-b border-slate-100 mb-3">
-              <TextInput
-                value={item.item_name}
-                placeholder="Item Name"
-                onChangeText={(text) => {
-                  const updated = [...items];
-                  updated[index].item_name = text;
-                  setItems(updated);
-                }}
-                className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 mb-2"
-              />
-              <View className="flex-row gap-2 mb-2">
-                <TextInput
-                  value={item.qty.toString()}
-                  keyboardType="numeric"
-                  onChangeText={(text) => updateItemQty(index, parseInt(text) || 1)}
-                  className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-center"
-                />
-                <TextInput
-                  value={item.price.toString()}
-                  keyboardType="numeric"
-                  onChangeText={(text) => updateItemPrice(index, parseFloat(text) || 0)}
-                  className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-center"
-                />
-              </View>
-              <View className="flex-row justify-between items-center">
-                <Text>₹{item.amount}</Text>
-                <View className="flex-row gap-2">
-                  <TouchableOpacity onPress={() => setShowProductModal(index)}>
-                    <Text className="text-indigo-600 text-xs font-bold">Select Product</Text>
-                  </TouchableOpacity>
+            <View
+              key={index}
+              className="mb-4 pb-4 border-b border-slate-100 last:border-0 last:mb-0 last:pb-0"
+            >
+              {/* Item Header with Number and Delete */}
+              <View className="flex-row justify-between mb-2">
+                <Text className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Item #{index + 1}
+                </Text>
+                {items.length > 1 && (
                   <TouchableOpacity onPress={() => removeItem(index)}>
-                    <Trash2 size={18} color="#EF4444" />
+                    <Trash2 size={16} color="#EF4444" />
                   </TouchableOpacity>
+                )}
+              </View>
+
+              {/* Product Selection Button */}
+              <TouchableOpacity
+                onPress={() => setShowProductModal(index)}
+                className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl p-3 mb-3"
+              >
+                <View
+                  className={`w-10 h-10 rounded-lg items-center justify-center mr-3 ${
+                    item.item_id ? 'bg-indigo-100' : 'bg-slate-200'
+                  }`}
+                >
+                  <Package size={20} color={item.item_id ? '#4F46E5' : '#94A3B8'} />
+                </View>
+                <View className="flex-1">
+                  {item.item_name ? (
+                    <>
+                      <Text className="text-slate-800 font-bold text-base">
+                        {item.item_name}
+                      </Text>
+                      <Text className="text-slate-500 text-xs">
+                        {item.name_english || ''}
+                      </Text>
+                    </>
+                  ) : (
+                    <Text className="text-slate-400 font-medium italic">
+                      Tap to select product...
+                    </Text>
+                  )}
+                </View>
+                <ChevronDown size={16} color="#94A3B8" />
+              </TouchableOpacity>
+
+              {/* Price, Quantity, and Total Controls */}
+              <View className="flex-row gap-3">
+                {/* Price Input */}
+                <View className="flex-1 bg-slate-50 rounded-xl p-2 border border-slate-100">
+                  <Text className="text-slate-400 text-[10px] font-bold uppercase mb-1 ml-1">
+                    Price
+                  </Text>
+                  <View className="flex-row items-center">
+                    <Text className="text-slate-400 text-xs mr-1">₹</Text>
+                    <TextInput
+                      value={item.price?.toString() || '0'}
+                      keyboardType="numeric"
+                      className="text-slate-800 font-bold text-base p-0 min-w-[40px]"
+                      onChangeText={(text) => {
+                        const price = parseFloat(text) || 0;
+                        updateItemPrice(index, price);
+                      }}
+                    />
+                  </View>
+                </View>
+
+                {/* Quantity Controls */}
+                <View className="flex-1 bg-slate-50 rounded-xl p-2 border border-slate-100 items-center">
+                  <Text className="text-slate-400 text-[10px] font-bold uppercase mb-1">
+                    Qty
+                  </Text>
+                  <View className="flex-row items-center">
+                    <TouchableOpacity
+                      onPress={() => {
+                        const newQty = Math.max(1, (item.qty || 1) - 1);
+                        updateItemQty(index, newQty);
+                      }}
+                      className="bg-white rounded p-1 shadow-sm"
+                    >
+                      <Text className="text-slate-600 font-bold">-</Text>
+                    </TouchableOpacity>
+                    <Text className="mx-3 text-slate-800 font-bold text-base">
+                      {item.qty || 1}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        const newQty = (item.qty || 1) + 1;
+                        updateItemQty(index, newQty);
+                      }}
+                      className="bg-white rounded p-1 shadow-sm"
+                    >
+                      <Text className="text-slate-600 font-bold">+</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Total Amount Display */}
+                <View className="flex-1 bg-green-50 rounded-xl p-2 border border-green-100 justify-center items-end pr-3">
+                  <Text className="text-green-600 text-[10px] font-bold uppercase mb-0.5">
+                    Total
+                  </Text>
+                  <Text className="text-green-700 font-black text-lg">
+                    ₹{(item.amount || 0).toFixed(0)}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -318,12 +391,12 @@ const EditBill = () => {
         <View className="bg-indigo-50 rounded-2xl p-4 mb-6">
           <View className="flex-row justify-between mb-2">
             <Text className="text-indigo-700 text-sm">Subtotal</Text>
-            <Text className="text-indigo-900 font-semibold">₹{subtotal}</Text>
+            <Text className="text-indigo-900 font-semibold">₹{subtotal.toLocaleString()}</Text>
           </View>
           <View className="border-t border-indigo-200 my-2" />
           <View className="flex-row justify-between">
             <Text className="text-indigo-900 font-bold text-lg">Total</Text>
-            <Text className="text-indigo-600 font-bold text-xl">₹{total}</Text>
+            <Text className="text-indigo-600 font-bold text-xl">₹{total.toLocaleString()}</Text>
           </View>
         </View>
       </ScrollView>

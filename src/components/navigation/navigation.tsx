@@ -9,6 +9,7 @@ import ItemMaster from '../../screen/ItemMaster/ItemMaster';
 import BillHistory from '../../screen/BillHistory/BillHistory';
 import BillDetails from '../../screen/BillHistory/BillDetails';
 import EditBill from '../../screen/BillHistory/EditBill';
+import PDFViewerScreen from '../../screen/PdfHandler/PDFViewerScreen';
 
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -46,6 +47,9 @@ export function RootStack() {
           name="EditBill"
           component={EditBill}
         />
+        <Stack.Screen 
+        name="PDFViewerScreen"
+        component={PDFViewerScreen}/>
     </Stack.Navigator>
   );
 }

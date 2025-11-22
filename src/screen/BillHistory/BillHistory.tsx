@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FileText, ChevronRight } from 'lucide-react-native';
+import { FileText, ChevronRight, StepBack } from 'lucide-react-native';
 import axios from 'axios';
 import ToastNotification from '../../components/toastModel/ToastNotification';
 import { useNavigation } from '@react-navigation/native';
@@ -107,9 +107,16 @@ const BillHistory = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50 px-5 pt-4">
-      <Text className="text-slate-900 text-2xl font-bold mb-6">
+      <View className='flex-row gap-4 items-center mb-3'>
+        <TouchableOpacity onPress={()=>navigation.goBack()}>
+        <StepBack/>
+
+        </TouchableOpacity>
+        <Text className="text-slate-900 text-2xl font-bold">
         Bill History
       </Text>
+      </View>
+      
       <FlatList
         data={bills}
         keyExtractor={(item) => item.id.toString()}

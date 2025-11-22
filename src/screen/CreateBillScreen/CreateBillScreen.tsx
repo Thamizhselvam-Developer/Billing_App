@@ -155,9 +155,10 @@ const navigation = useNavigation<NAvigationProps>()
         useNativeDriver: true,
       }),
     ]).start();
-    loadInitialData();
   }, []);
-
+useEffect(()=>{
+    loadInitialData();
+},[])
   const loadInitialData = async () => {
     setIsLoading(true);
     try {
@@ -167,7 +168,7 @@ const navigation = useNavigation<NAvigationProps>()
      setInvoiceNo(invoice)
 
      }
-     console.log(invoice)
+     console.log(invoice,"DD")
       const data = await getProduct();
       setAvailableProducts(data || []);
     } catch (err) {
@@ -256,7 +257,7 @@ const navigation = useNavigation<NAvigationProps>()
     const isValid = validateBillData();
 
   if (!isValid) {
-    // Collect all error messages
+
     const allErrors = Object.values(fieldErrors).filter(msg => msg).join('\n');
     Toast.error(allErrors || 'Please check the form for errors.');
     return;
@@ -324,7 +325,7 @@ const navigation = useNavigation<NAvigationProps>()
     <SafeAreaView className="flex-1 bg-slate-50">
       <StatusBar barStyle="dark-content" backgroundColor="#0F172A" />
     <ToastNotification/>
-      <View className="bg-slate-900 pb-6 pt-2 px-6 shadow-lg z-10">
+      <View className="bg-blue-900 pb-6 pt-2 px-6 shadow-lg z-10">
         <View className="flex-row justify-between items-start">
           <View>
             <Text className="text-slate-400 text-xs font-bold tracking-widest uppercase mb-1">
@@ -333,13 +334,13 @@ const navigation = useNavigation<NAvigationProps>()
             <Text className="text-white text-2xl font-black tracking-tight">
               Create Bill
             </Text>
-            <Text className="text-indigo-400 text-sm font-medium mt-1">
+            <Text className="text-white text-sm font-medium mt-1">
               {companyDetails.name}
             </Text>
           </View>
-          <View className="items-end">
-            <View className="bg-indigo-600/20 px-3 py-1 rounded-full border border-indigo-500/30 mb-1">
-              <Text className="text-indigo-300 text-xs font-bold">
+          <View className="items-end justify-center my-auto">
+            <View className="bg-indigo-600/20 px-3 py-1 rounded-full border border-indigo-500/30 mb-1 my-auto">
+              <Text className="text-indigo-300 text-lg font-bold">
                 {invoiceNo}
               </Text>
             </View>
@@ -385,16 +386,22 @@ const navigation = useNavigation<NAvigationProps>()
 
   {/* Phone */}
   <View className="mb-4 flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
-    <Smartphone color="#64748B" size={20} />
-    <TextInput
-      className="flex-1 ml-3 text-slate-800 font-medium text-base"
-      placeholder="Phone"
-      placeholderTextColor="#94A3B8"
-      keyboardType="phone-pad"
-      value={customer.phone}
-      onChangeText={handlePhoneChange}
-    />
-  </View>
+  <Smartphone color="#64748B" size={20} />
+  <TextInput
+    className="flex-1 ml-3 text-slate-800 font-medium text-base"
+    placeholder="Phone"
+    placeholderTextColor="#94A3B8"
+    keyboardType="number-pad"
+    maxLength={10} // Limit to 10 digits
+    value={customer.phone}
+    onChangeText={(text) => {
+      // Remove non-digit characters
+      const digitsOnly = text.replace(/\D/g, '');
+      handlePhoneChange(digitsOnly);
+    }}
+  />
+</View>
+
 
   {/* Delivery Address */}
   <View className="mb-4 flex-row items-start bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
@@ -574,23 +581,7 @@ const navigation = useNavigation<NAvigationProps>()
               ))}
             </View>
 
-            {/* Bank Info (Compact) */}
-            <View className="bg-indigo-900 rounded-2xl p-4 flex-row items-center shadow-sm">
-              <View className="bg-white/10 p-3 rounded-xl mr-4">
-                <Building2 size={24} color="white" />
-              </View>
-              <View>
-                <Text className="text-white font-bold text-sm mb-0.5">
-                  {bankDetails.bankName}
-                </Text>
-                <Text className="text-indigo-200 text-xs font-medium tracking-wide">
-                  A/C: {bankDetails.accountNo}
-                </Text>
-                <Text className="text-indigo-200 text-xs font-medium tracking-wide">
-                  IFSC: {bankDetails.ifscCode}
-                </Text>
-              </View>
-            </View>
+         
 
             {/* Spacer for sticky footer */}
             <View className="h-6" />
@@ -703,9 +694,7 @@ const navigation = useNavigation<NAvigationProps>()
                           </View>
                         )}
                         <View className="bg-indigo-50 px-2 py-0.5 rounded text-xs">
-                          <Text className="text-indigo-600 text-xs font-bold">
-                            Stock: {item.stock ?? 'N/A'}
-                          </Text>
+                         
                         </View>
                       </View>
                     </View>

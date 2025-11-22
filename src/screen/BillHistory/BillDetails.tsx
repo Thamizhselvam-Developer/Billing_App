@@ -5,6 +5,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -57,33 +58,33 @@ const BillDetails = () => {
   const [generating, setGenerating] = useState(false);
 
   const generatePDF = async () => {
-    setGenerating(true);
-    try {
-      const response = await axios.post(`${API_URL}api/bills/generate-pdf`, {
-        id: bill.id,
-        invoice_number: bill.invoice_number,
-        invoice_date: bill.invoice_date,
-        subtotal: bill.subtotal,
-        total: bill.total,
-        buyer: bill.buyer,
-        items: bill.items,
-      });
+    navigation.navigate('PDFViewerScreen', { bill });
+//     console.log(bill,"BILL")
+//     setGenerating(true);
+//     try {
+//       const response = await axios.post(`${API_URL}api/bills/generate-pdf`, {
+//         id: bill.id,
+//         invoice_number: bill.invoice_number,
+//         invoice_date: bill.invoice_date,
+//         subtotal: bill.subtotal,
+//         total: bill.total,
+//         buyer: bill.buyer,
+//         items: bill.items,
+//       });
+// console.log(response)
+//       if (response.data.success) {
+//         Toast.success('PDF generated successfully!');
 
-      if (response.status === 200) {
-        Toast.success('PDF generated successfully!');
-        // Handle PDF download/view here
-        // You might want to open the PDF URL or download it
-        if (response.data.pdf_url) {
-          // Open PDF or download
-          // Linking.openURL(response.data.pdf_url);
-        }
-      }
-    } catch (err) {
-      console.error(err);
-      Toast.error('Failed to generate PDF');
-    } finally {
-      setGenerating(false);
-    }
+//         if (response.data.pdf_url) {
+//           Linking.openURL(`${API_URL}uploads/pdf/${response.data.pdf_url.url}`);
+//         }
+//       }
+//     } catch (err) {
+//       console.error(err);
+//       Toast.error('Failed to generate PDF');
+//     } finally {
+//       setGenerating(false);
+//     }
   };
 
   const handleEdit = () => {

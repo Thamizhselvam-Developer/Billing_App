@@ -88,16 +88,26 @@ const BillDetails = () => {
   };
 
   const handleEdit = () => {
-    navigation.navigate('EditBill' as never, { bill } as never);
-  };
+  navigation.navigate('EditBill' as never, {
+    bill,
+    onGoBack: () => {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'BillHistory' as never }],
+      });
+    },
+  } as never);  };
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
       {/* Header */}
       <View className="flex-row items-center px-5 py-4 bg-white border-b border-slate-200">
-        <TouchableOpacity onPress={() => navigation.goBack()} className="mr-4">
-          <ArrowLeft size={24} color="#1E293B" />
-        </TouchableOpacity>
+       <TouchableOpacity
+  onPress={() => navigation.navigate('BillHistory' as never)}
+  className="mr-4"
+>
+  <ArrowLeft size={24} color="#1E293B" />
+</TouchableOpacity>
         <Text className="text-slate-900 text-xl font-bold flex-1">
           Bill Details
         </Text>

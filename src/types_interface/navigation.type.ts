@@ -5,5 +5,6 @@ export type RootStackParamList = {
   ItemMaster: undefined;
   BillDetails: any;
   EditBill: any;
+  BillHistoryScreen:any;
   PDFViewerScreen:{ bill:any }
 };

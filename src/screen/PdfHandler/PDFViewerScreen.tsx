@@ -124,7 +124,7 @@ if (fullUrl && !fullUrl.startsWith('http')) {
   fullUrl = `${apiUrlClean}${fullUrl.startsWith('/') ? fullUrl : `/${fullUrl}`}`;
 }
 
-
+console.log(fullUrl)
         setPdfUrl(fullUrl);
         Toast.success('PDF generated successfully!');
       } else {
@@ -324,14 +324,20 @@ if (fullUrl && !fullUrl.startsWith('http')) {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ArrowLeft size={24} color="#1E293B" />
-        </TouchableOpacity>
+       <TouchableOpacity
+  onPress={() =>
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'BillHistory' }],
+    })
+  }
+>
+  <ArrowLeft size={24} color="#1E293B" />
+</TouchableOpacity>
         <Text style={styles.headerTitle}>Invoice PDF</Text>
         <View style={{ width: 24 }} />
       </View>
         <ToastNotification/>
-      {/* PDF Viewer */}
       <View style={styles.pdfContainer}>
         {loading ? (
           <View style={styles.loadingContainer}>

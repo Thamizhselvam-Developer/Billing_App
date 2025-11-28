@@ -43,7 +43,13 @@ const BillHistory = () => {
   const [bills, setBills] = useState<Bill[]>([]);
   const [loading, setLoading] = useState(true);
   const navigation = useNavigation();
+useEffect(() => {
+  const unsubscribe = navigation.addListener('focus', () => {
+    loadBills(); // your function to reload bill list
+  });
 
+  return unsubscribe;
+}, [navigation]);
   const loadBills = async () => {
     setLoading(true);
     try {
@@ -108,10 +114,15 @@ const BillHistory = () => {
   return (
     <SafeAreaView className="flex-1 bg-slate-50 px-5 pt-4">
       <View className='flex-row gap-4 items-center mb-3'>
-        <TouchableOpacity onPress={()=>navigation.goBack()}>
-        <StepBack/>
-
-        </TouchableOpacity>
+       <TouchableOpacity
+  onPress={() => {
+   
+      navigation.navigate('HomeScreen'); // fallback if no previous screen
+    
+  }}
+>
+  <StepBack />
+</TouchableOpacity>
         <Text className="text-slate-900 text-2xl font-bold">
         Bill History
       </Text>

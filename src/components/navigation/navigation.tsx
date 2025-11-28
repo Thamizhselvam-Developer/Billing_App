@@ -10,6 +10,7 @@ import BillHistory from '../../screen/BillHistory/BillHistory';
 import BillDetails from '../../screen/BillHistory/BillDetails';
 import EditBill from '../../screen/BillHistory/EditBill';
 import PDFViewerScreen from '../../screen/PdfHandler/PDFViewerScreen';
+import BillHistoryScreen from '../../screen/filterBill/Bill';
 
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -41,6 +42,16 @@ export function RootStack() {
                 <Stack.Screen
           name="BillDetails"
           component={BillDetails}
+           options={{
+    gestureEnabled: false, 
+  }}
+        />
+           <Stack.Screen
+          name="BillHistoryScreen"
+          component={BillHistoryScreen}
+           options={{
+    gestureEnabled: false, 
+  }}
         />
 
                 <Stack.Screen

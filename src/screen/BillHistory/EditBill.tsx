@@ -181,7 +181,7 @@ const EditBill = () => {
       const res = await axios.patch(`${API_URL}api/bills/update/${bill.id}`, updatedBill);
       if (res.data.success) {
         Toast.success('Bill updated successfully!');
-        navigation.navigate('BillHistory');
+        navigation.replace('BillHistory');
       }
     } catch (err) {
       Toast.error('Failed to update bill');

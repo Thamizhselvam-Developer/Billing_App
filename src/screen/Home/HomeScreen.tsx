@@ -72,10 +72,19 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       iconBg: 'bg-blue-100',
       onPress: () => navigation.navigate('CreateBillScreen'),
     },
-    {
-      id: 2,
+      {
+      id: 1,
       title: 'Bill History',
       subtitle: 'View past transactions',
+      icon: <FileText size={32} color="#1d4ed8" />,
+      bgColor: 'bg-indigo-500',
+      iconBg: 'bg-blue-100',
+      onPress: () => navigation.navigate('BillHistoryScreen'),
+    },
+    {
+      id: 2,
+      title: 'Generate Pdf',
+      subtitle: 'Generate invoice as pdf',
       icon: <Receipt size={32} color="#059669" />,
       bgColor: 'bg-green-500',
       iconBg: 'bg-green-100',
@@ -140,14 +149,14 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   ];
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 border ">
+    <SafeAreaView className="flex-1 bg-gray-50  ">
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
   <View className="bg-white shadow-md  ">
         <View className="px-6 pt-6 pb-4">
           <View className="flex-row items-center justify-between mb-3">
             <View>
               <Text className="text-3xl font-extrabold text-gray-800">
-                ⭐ Nethra Food Products
+                 Nethra Food Products
               </Text>
               <Text className="text-sm text-gray-500 mt-2">
                 {new Date().toLocaleDateString('en-US', {
@@ -157,9 +166,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                 })}
               </Text>
             </View>
-            <TouchableOpacity className="bg-blue-50 rounded-full p-3">
-              <Bell size={26} color="#2563eb" />
-            </TouchableOpacity>
+   
           </View>
 
           {/* Stats */}

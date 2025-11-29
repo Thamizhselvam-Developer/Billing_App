@@ -1,30 +1,28 @@
+// APi/searchCustomer.ts
+import { API_URL } from "@env";
 import axios from "axios";
 
-
-interface CustomerSearchResult {
-  name: string;
-  phone: string;
-  email: string;
-  address: string;
+export interface CustomerSearchResult {
+  id: number;
+  buyer_name: string;
+  phone?: string;
+  email?: string;
+  address?: string;
 }
 
 export const searchCustomers = async (
   query: string
 ): Promise<CustomerSearchResult[]> => {
+  if (query.length < 2) return [];
+
   try {
     const response = await axios.get(
-      `YOUR_API_BASE_URL/api/customers/search?q=${encodeURIComponent(query)}`,
-     
+      `${API_URL}search/buyers?query=${encodeURIComponent(query)}`
     );
-
-    if (!response) {
-      throw new Error('Failed to search customers');
-    }
-
-    const data = await response.data.data;
-    return data;
+console.log(response)
+    return response.data.data || [];
   } catch (error) {
-    console.error('Search customers API error:', error);
-    throw error;
+    console.error("Search customers API error:", error);
+    return [];
   }
 };

@@ -1,4 +1,4 @@
-import React, { JSX, useState } from 'react';
+import React, { JSX, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -22,6 +22,9 @@ import {
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types_interface/navigation.type';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { salesData } from './sales';
+import { API_URL } from '@env';
+import axios from 'axios';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -53,7 +56,29 @@ type FooterItem = {
 
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [activeTab, setActiveTab] = useState('home');
+const [todaySale, setTodaySale] = useState(0);
+const [monthSale, setMonthSale] = useState(0);
+useEffect(() => {
+  fetchSales();
+}, []);
 
+const fetchSales = async () => {
+  try {
+    // Get today's sale
+    const dailyResponse = await axios.get(`${API_URL}api/report/daily`);
+    console.log(dailyResponse.data);
+    const {total} =  dailyResponse.data;
+    setTodaySale(total || 0);
+
+    // Get month sale
+    const monthlyResponse = await axios.get(`${API_URL}api/report/monthly`);
+    const {total: monthlyTotal} =  monthlyResponse.data;
+    setMonthSale(monthlyTotal || 0);
+
+  } catch (error) {
+    console.log("Error fetching sales:", error);
+  }
+};
   const shadowStyle = {
     elevation: 8,
     shadowColor: '#000',
@@ -92,7 +117,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     },
     {
       id: 3,
-      title: 'Item Master',
+      title: 'Items',
       subtitle: 'Manage your inventory',
       icon: <Package size={32} color="#7c3aed" />,
       bgColor: 'bg-purple-500',
@@ -101,52 +126,46 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     },
   ];
 
-  const footerItems: FooterItem[] = [
-    {
-      id: 'home',
-      label: 'Home',
-      icon: <Home size={26} />,
-      activeIcon: <Home size={26} color="#2563eb" />,
-      onPress: () => setActiveTab('home'),
+ const footerItems: FooterItem[] = [
+  {
+    id: 'home',
+    label: 'Home',
+    icon: <Home size={26} />,
+    activeIcon: <Home size={26} color="#2563eb" />,
+    onPress: () => setActiveTab('home'),
+  },
+  {
+    id: 'bills',
+    label: 'Bills',
+    icon: <Receipt size={26} />,
+    activeIcon: <Receipt size={26} color="#2563eb" />,
+    onPress: () => {
+      setActiveTab('bills');
+      navigation.navigate('BillHistory');
     },
-    {
-      id: 'bills',
-      label: 'Bills',
-      icon: <Receipt size={26} />,
-      activeIcon: <Receipt size={26} color="#2563eb" />,
-      onPress: () => {
-        setActiveTab('bills');
-        navigation.navigate('BillHistory');
-      },
+  },
+  {
+    id: 'create',
+    label: 'Create',
+    // Removed isSpecial flag and reduced icon size
+    icon: <CirclePlus size={26} color="#2563eb" />,
+    activeIcon: <CirclePlus size={26} color="#2563eb" />,
+    onPress: () => {
+      setActiveTab('create');
+      navigation.navigate('CreateBillScreen');
     },
-    {
-      id: 'create',
-      label: 'Create',
-      isSpecial: true,
-      icon: <CirclePlus size={40} color="#fff" />,
-      onPress: () => {
-        setActiveTab('create');
-        navigation.navigate('CreateBillScreen');
-      },
+  },
+  {
+    id: 'items',
+    label: 'Items',
+    icon: <Package size={26} />,
+    activeIcon: <Package size={26} color="#2563eb" />,
+    onPress: () => {
+      setActiveTab('items');
+      navigation.navigate('ItemMaster');
     },
-    {
-      id: 'items',
-      label: 'Items',
-      icon: <Package size={26} />,
-      activeIcon: <Package size={26} color="#2563eb" />,
-      onPress: () => {
-        setActiveTab('items');
-        navigation.navigate('ItemMaster');
-      },
-    },
-    {
-      id: 'profile',
-      label: 'Profile',
-      icon: <User size={26} />,
-      activeIcon: <User size={26} color="#2563eb" />,
-      onPress: () => setActiveTab('profile'),
-    },
-  ];
+  },
+];
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50  ">
@@ -173,11 +192,11 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           <View className="flex-row justify-between mt-4">
             <View className="bg-blue-50 rounded-xl px-4 py-3 flex-1 mr-2">
               <Text className="text-blue-600 text-xs font-semibold">TODAY</Text>
-              <Text className="text-blue-900 text-lg font-bold mt-1">₹12,450</Text>
+              <Text className="text-blue-900 text-lg font-bold mt-1">₹{todaySale}</Text>
             </View>
             <View className="bg-green-50 rounded-xl px-4 py-3 flex-1 ml-2">
               <Text className="text-green-600 text-xs font-semibold">MONTH</Text>
-              <Text className="text-green-900 text-lg font-bold mt-1">₹3.2L</Text>
+              <Text className="text-green-900 text-lg font-bold mt-1">₹{monthSale}</Text>
             </View>
           </View>
         </View>
@@ -214,41 +233,10 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
             </TouchableOpacity>
           ))}
 
-          {/* Recent Activity */}
-          <View className="mt-6 mb-4">
-            <Text className="text-lg font-bold text-gray-800 mb-3">Recent Activity</Text>
-            <View className="bg-white rounded-2xl p-4 shadow-sm">
-              <View className="flex-row items-center justify-between mb-3 pb-3 border-b border-gray-100">
-                <View className="flex-row items-center flex-1">
-                  <View className="bg-blue-50 rounded-full p-2 mr-3">
-                    <Receipt size={20} color="#059669" />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="text-gray-800 font-semibold">Invoice #1245</Text>
-                    <Text className="text-gray-500 text-xs">2 hours ago</Text>
-                  </View>
-                </View>
-                <Text className="text-green-600 font-bold">₹2,450</Text>
-              </View>
-
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center flex-1">
-                  <View className="bg-purple-50 rounded-full p-2 mr-3">
-                    <Package size={20} color="#7c3aed" />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="text-gray-800 font-semibold">Item Added</Text>
-                    <Text className="text-gray-500 text-xs">5 hours ago</Text>
-                  </View>
-                </View>
-                <Text className="text-gray-400 font-semibold">+3 items</Text>
-              </View>
-            </View>
-          </View>
+      
         </View>
       </ScrollView>
 
-      {/* Bottom Navigation */}
       <View
         className="bg-white border-t border-gray-200 absolute bottom-0 left-0 right-0"
         style={{
@@ -259,54 +247,55 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           shadowRadius: 6,
         }}
       >
-        <View className="flex-row items-center justify-around px-2 py-2">
-          {footerItems.map((item) => {
-            const isActive = activeTab === item.id;
+        <View className="bg-white border-t border-gray-200 absolute bottom-0 left-0 right-0 py-3">
+  <View className="flex-row items-center justify-around">
 
-            if (item.isSpecial) {
-              return (
-                <TouchableOpacity
-                  key={item.id}
-                  onPress={item.onPress}
-                  className="items-center justify-center -mt-8"
-                  style={{ width: 70 }}
-                >
-                  <View
-                    className="bg-blue-500 rounded-full p-4 shadow-lg items-center justify-center"
-                    style={{
-                      width: 64,
-                      height: 64,
-                      elevation: 10,
-                      shadowColor: '#3B82F6',
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.4,
-                      shadowRadius: 8,
-                    }}
-                  >
-                    {item.icon}
-                  </View>
-                  <Text className="text-xs font-semibold text-blue-600 mt-2">{item.label}</Text>
-                </TouchableOpacity>
-              );
-            }
+    {footerItems.map((item) => {
+      const isActive = activeTab === item.id;
 
-            return (
-              <TouchableOpacity
-                key={item.id}
-                onPress={item.onPress}
-                className="items-center justify-center py-2 px-3 flex-1"
-                style={{ maxWidth: 80 }}
-              >
-                <View className={`${isActive ? 'bg-blue-50' : 'bg-transparent'} rounded-2xl px-4 py-2`}>
-                  {isActive ? item.activeIcon : item.icon}
-                </View>
-                <Text className={`text-xs font-semibold mt-1 ${isActive ? 'text-blue-600' : 'text-gray-500'}`}>
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+      if (item.isSpecial) {
+        return (
+          <TouchableOpacity
+            key={item.id}
+            onPress={item.onPress}
+            className="items-center justify-center -mt-9"
+          >
+            <View className="bg-blue-600 w-16 h-16 rounded-full items-center justify-center shadow-lg">
+              {item.icon}
+            </View>
+            <Text className="text-xs font-semibold text-blue-600 mt-1">{item.label}</Text>
+          </TouchableOpacity>
+        );
+      }
+
+      return (
+        <TouchableOpacity
+          key={item.id}
+          onPress={item.onPress}
+          className="items-center justify-center w-16"
+        >
+          <View
+            className={`p-2 rounded-xl ${
+              isActive ? "bg-blue-50" : "bg-transparent"
+            }`}
+          >
+            {isActive ? item.activeIcon : item.icon}
+          </View>
+
+          <Text
+            className={`text-xs font-semibold mt-1 ${
+              isActive ? "text-blue-600" : "text-gray-500"
+            }`}
+          >
+            {item.label}
+          </Text>
+        </TouchableOpacity>
+      );
+    })}
+
+  </View>
+</View>
+
       </View>
     </SafeAreaView>
   );

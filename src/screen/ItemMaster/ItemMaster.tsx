@@ -255,7 +255,7 @@ const ItemMasterScreen = ({ navigation }: any) => {
       >
         {filteredProducts.map((product, index) => (
           <View
-            key={product.id}
+            key={index}
             className="bg-white rounded-3xl p-5 mb-4 border border-gray-100"
             style={{
               elevation: 4,
@@ -300,9 +300,7 @@ const ItemMasterScreen = ({ navigation }: any) => {
                       {product.weight}
                     </Text>
                   </View>
-                  <View className="bg-amber-100 border border-amber-200 rounded-2xl px-3 py-2 mb-2">
-                    <Text className="text-amber-700 text-xs font-bold">● In Stock</Text>
-                  </View>
+                  
                 </View>
 
                 {/* Price & Actions */}

@@ -11,6 +11,9 @@ import {
   RefreshControl,
   Animated,
   StyleSheet,
+  Alert,
+  PermissionsAndroid,
+  Platform,
 } from 'react-native';
 import {
   Search,
@@ -89,6 +92,7 @@ const BillHistoryScreen = () => {
   const [showBillDetailModal, setShowBillDetailModal] = useState(false);
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [currentPdfUrl, setCurrentPdfUrl] = useState('');
+  const [downloading, setDownloading] = useState(false);
 
   const [filters, setFilters] = useState<FilterState>({
     period: 'all',
@@ -117,22 +121,24 @@ const BillHistoryScreen = () => {
     const response = await axios.get(`${API_URL}api/bills/all`);
 
     const rawBills = response.data.data;
-console.log(rawBills,"asdfasdfasd")
-    const mappedBills: Bill[] = rawBills.map((b: any) => ({
-      id: b.id,
-      invoice_number: b.invoice_number,
-      invoice_date: b.invoice_date,
-      subtotal: b.subtotal,
-      total: b.total,
-      pdf_url:b.pdf_url,
-      buyer: {
-        id: b.buyer.id,
-        buyer_name: b.buyer.buyer_name,
-        phone: b.buyer.phone,
-        address: b.buyer.address,
-      },
-      items: b.items,
-    }));
+  const mappedBills: Bill[] = rawBills
+  .filter((b: any) => b.isgenerated === true) // only include generated bills
+  .map((b: any) => ({
+    id: b.id,
+    invoice_number: b.invoice_number,
+    invoice_date: b.invoice_date,
+    subtotal: b.subtotal,
+    total: b.total,
+    pdf_url: b.pdf_url,
+    isgenerated: b.isgenerated,
+    buyer: {
+      id: b.buyer.id,
+      buyer_name: b.buyer.buyer_name,
+      phone: b.buyer.phone,
+      address: b.buyer.address,
+    },
+    items: b.items,
+  }));
 
     setBills(mappedBills);
   } catch (err) {
@@ -235,33 +241,117 @@ console.log(rawBills,"asdfasdfasd")
       console.log('Generate PDF for bill:', bill.id);
     }
   };
+  const requestStoragePermission = async (): Promise<boolean> => {
+    if (Platform.OS !== 'android') return true;
 
-  const handleDownloadPdf = async (bill: Bill) => {
     try {
-      if (!bill.pdf_url) {
-        console.log('PDF URL not available');
-        return;
+      if (Platform.Version >= 33) {
+        // Android 13+ doesn't need storage permission for scoped storage
+        return true;
       }
 
-      const { config, fs } = ReactNativeBlobUtil;
-      const downloads = fs.dirs.DownloadDir;
-      const fileName = `Bill_${bill.invoice_number}.pdf`;
-
-      const result = await config({
-        fileCache: true,
-        addAndroidDownloads: {
-          useDownloadManager: true,
-          notification: true,
-          path: `${downloads}/${fileName}`,
-          description: 'Downloading bill PDF',
-        },
-      }).fetch('GET', `${API_URL}${bill.pdf_url}`);
-
-      console.log('PDF downloaded:', result.path());
-    } catch (error) {
-      console.error('Download error:', error);
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+        {
+          title: 'Storage Permission',
+          message: 'App needs access to save PDF files',
+          buttonNeutral: 'Ask Me Later',
+          buttonNegative: 'Cancel',
+          buttonPositive: 'OK',
+        }
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    } catch (err) {
+      console.warn(err);
+      return false;
     }
   };
+
+const handleDownloadPdf = async (bill: Bill) => {
+  try {
+    if (!bill.pdf_url) {
+      Alert.alert('Error', 'PDF URL not available');
+      return;
+    }
+
+    setDownloading(true); // START LOADER
+
+    const pdfUrl = `${API_URL}${bill.pdf_url}`;
+    const fileName = `Bill_${bill.invoice_number}.pdf`;
+
+    const hasPermission = await requestStoragePermission();
+    if (!hasPermission) {
+      setDownloading(false); // STOP LOADER
+      Alert.alert('Permission Denied', 'Storage permission is required to download');
+      return;
+    }
+
+    const { fs } = ReactNativeBlobUtil;
+    let downloadDir = fs.dirs.DownloadDir;
+    if (Platform.OS === 'ios') downloadDir = fs.dirs.DocumentDir;
+
+    const filePath = `${downloadDir}/${fileName}`;
+
+    const configOptions =
+      Platform.OS === 'android'
+        ? {
+            fileCache: true,
+            addAndroidDownloads: {
+              useDownloadManager: true,
+              notification: true,
+              mediaScannable: true,
+              title: fileName,
+              description: 'Downloading invoice PDF',
+              mime: 'application/pdf',
+              path: filePath,
+            },
+          }
+        : { fileCache: true, path: filePath };
+
+    Toast.success('Download started...');
+
+    const response = await ReactNativeBlobUtil.config(configOptions).fetch(
+      'GET',
+      pdfUrl
+    );
+
+    console.log('PDF downloaded:', response.path());
+
+    if (Platform.OS === 'ios') {
+      ReactNativeBlobUtil.ios.openDocument(response.path());
+    }
+
+    Toast.success('PDF downloaded successfully!');
+
+    Alert.alert(
+      'Download Complete',
+      `Invoice saved to ${
+        Platform.OS === 'ios' ? 'Documents' : 'Downloads'
+      }\n\nFile: ${fileName}`,
+      [
+        { text: 'OK' },
+        Platform.OS === 'android'
+          ? {
+              text: 'Open',
+              onPress: () => {
+                ReactNativeBlobUtil.android.actionViewIntent(
+                  response.path(),
+                  'application/pdf'
+                );
+              },
+            }
+          : null,
+      ].filter(Boolean) as any
+    );
+  } catch (error) {
+    console.error('Download error:', error);
+    Toast.error('Failed to download PDF');
+    Alert.alert('Error', 'Failed to download PDF. Please try again.');
+  } finally {
+    setDownloading(false); // STOP LOADER ALWAYS
+  }
+};
+
 
   const handleSharePdf = async (bill: Bill) => {
     try {
@@ -678,7 +768,14 @@ console.log(rawBills,"asdfasdfasd")
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
       <StatusBar barStyle="dark-content" backgroundColor="#1E293B" />
-
+    {downloading && (
+  <View className="absolute inset-0 bg-black/40 flex items-center justify-center z-50">
+    <ActivityIndicator size="large" color="#fff" />
+    <Text className="text-white mt-3 text-lg font-semibold">
+      Downloading PDF...
+    </Text>
+  </View>
+  )}
       {/* Header */}
       <View className="bg-slate-800 pb-6 pt-2 px-6 shadow-lg">
         <Text className="text-white text-2xl font-black mb-1">Bill History</Text>

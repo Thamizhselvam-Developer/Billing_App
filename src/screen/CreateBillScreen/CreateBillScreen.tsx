@@ -2602,6 +2602,7 @@ import { Toast } from '../../components/toastModel/ToastModel';
 
 // Types
 import { RootStackParamList } from '../../types_interface/navigation.type';
+import BillItemCard from './sub/BillItemCard';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
@@ -2670,6 +2671,7 @@ const createInitialBillItem = (): BillItem => ({
 
 // ==================== CUSTOM HOOKS ====================
 
+
 // Debounce Hook
 const useDebounce = () => {
   const timeoutRef = useRef<number | null>(null);
@@ -2718,9 +2720,16 @@ const useBillForm = () => {
     setBillItems((prev) => [...prev, createInitialBillItem()]);
   }, []);
 
-  const removeBillItem = useCallback((id: string) => {
-    setBillItems((prev) => (prev.length <= 1 ? prev : prev.filter((item) => item.id !== id)));
-  }, []);
+const removeBillItem = useCallback((id: string) => {
+  setBillItems((prev) => {
+    // Only allow deletion if more than 1 item exists
+    if (prev.length <= 1) {
+      Toast.error('At least one item is required');
+      return prev;
+    }
+    return prev.filter((item) => item.id !== id);
+  });
+}, []);
 
   const updateBillItemQuantity = useCallback((id: string, delta: number) => {
     setBillItems((prev) =>
@@ -2735,6 +2744,7 @@ const useBillForm = () => {
       })
     );
   }, []);
+
 
   const updateBillItemPrice = useCallback((id: string, priceText: string) => {
     const price = parseFloat(priceText) || 0;
@@ -2751,7 +2761,25 @@ const useBillForm = () => {
     );
   }, []);
 
-  const selectProductForItem = useCallback(
+  
+  const handleQuantityChanges = (id: string, delta: number) => {
+  setBillItems(prev =>
+    prev.map(item => {
+      if (item.id !== id) return item;
+
+      // Prevent quantity from going below 1
+      const newQuantity = Math.max(1, item.quantity + delta);
+
+      return {
+        ...item,
+        quantity: newQuantity,
+        amount: newQuantity * item.unitPrice,
+      };
+    })
+  );
+};
+
+ const selectProductForItem = useCallback(
     (itemId: string, product: Product) => {
       setBillItems((prev) =>
         prev.map((item) => {
@@ -2842,6 +2870,7 @@ const useBillForm = () => {
   };
 };
 
+
 // ==================== SUB-COMPONENTS ====================
 
 // Customer Autocomplete Component
@@ -2928,7 +2957,13 @@ const CustomerAutocomplete: React.FC<{
     },
     [onCustomerSelect]
   );
-
+const navigation = useNavigation<NavigationProps>();
+ useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      // Prevent default behavior if needed
+    });
+    return unsubscribe;
+  }, [navigation]);
   useEffect(() => {
     const keyboardDidHide = Keyboard.addListener('keyboardDidHide', () => {
       setShowSuggestions(false);
@@ -3051,6 +3086,7 @@ const CustomerDetailsForm: React.FC<{
         <Text className="text-slate-800 font-bold text-lg tracking-tight">Customer Details</Text>
       </View>
 
+      {/* Name with Autocomplete */}
       <CustomerAutocomplete
         value={customer.buyer_name}
         onValueChange={handleNameChange}
@@ -3058,30 +3094,7 @@ const CustomerDetailsForm: React.FC<{
         searchFunction={searchCustomers}
         error={errors.customerName}
       />
-
-      <View className="mb-4">
-        <View
-          className={`flex-row items-center bg-slate-50 border ${
-            errors.customerPhone ? 'border-red-300' : 'border-slate-200'
-          } rounded-xl px-4 py-3`}
-        >
-          <Smartphone color="#64748B" size={20} />
-          <TextInput
-            className="flex-1 ml-3 text-slate-800 font-medium text-base"
-            placeholder="Phone Number"
-            placeholderTextColor="#94A3B8"
-            keyboardType="number-pad"
-            maxLength={10}
-            value={customer.phone}
-            onChangeText={handlePhoneChange}
-          />
-        </View>
-        {errors.customerPhone && (
-          <Text className="text-red-500 text-xs mt-1.5 ml-1 font-medium">⚠️ {errors.customerPhone}</Text>
-        )}
-      </View>
-
-      <View className="flex-row items-start bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+<View className="flex-row items-start bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-4">
         <MapPin color="#64748B" size={20} style={{ marginTop: 6 }} />
         <TextInput
           className="flex-1 ml-3 text-slate-800 font-medium text-base"
@@ -3092,113 +3105,50 @@ const CustomerDetailsForm: React.FC<{
           value={customer.address}
           onChangeText={handleAddressChange}
           textAlignVertical="top"
+          autoComplete="off"
         />
       </View>
-    </View>
-  );
-};
-
-// Bill Item Card
-const BillItemCard: React.FC<{
-  item: BillItem;
-  index: number;
-  canDelete: boolean;
-  onDelete: (id: string) => void;
-  onSelectProduct: (id: string) => void;
-  onQuantityChange: (id: string, delta: number) => void;
-  onPriceChange: (id: string, price: string) => void;
-  error?: string;
-}> = ({ item, index, canDelete, onDelete, onSelectProduct, onQuantityChange, onPriceChange, error }) => {
-  return (
-    <View className="mb-4 pb-4 border-b border-slate-100 last:border-0 last:mb-0 last:pb-0">
-      <View className="flex-row justify-between mb-2">
-        <Text className="text-xs font-bold text-slate-400 uppercase tracking-wider">Item #{index + 1}</Text>
-        {canDelete && (
-          <TouchableOpacity onPress={() => onDelete(item.id)} activeOpacity={0.7}>
-            <Trash2 size={16} color="#EF4444" />
-          </TouchableOpacity>
+      {/* FIXED: Phone Input with Autocomplete Prevention */}
+      <View className="mb-4">
+        <View
+          className={`flex-row items-center bg-slate-50 border ${
+            errors.customerPhone ? 'border-red-300' : 'border-slate-200'
+          } rounded-xl px-4 py-3`}
+        >
+          <Smartphone color="#64748B" size={20} />
+          <TextInput
+            className="flex-1 ml-3 text-slate-800 font-medium text-base"
+            placeholder="Phone Number (10 digits)"
+            placeholderTextColor="#94A3B8"
+            keyboardType="number-pad"
+            maxLength={10}
+            value={customer.phone}
+            onChangeText={handlePhoneChange}
+            // CRITICAL FIXES for Android autocomplete issue
+            autoComplete="off"
+            textContentType="none"
+            importantForAutofill="no"
+            autoCorrect={false}
+            // Additional Android-specific props
+            {...Platform.select({
+              android: {
+                importantForAutofill: 'no',
+                autoComplete: 'off',
+              },
+            })}
+          />
+        </View>
+        {errors.customerPhone && (
+          <Text className="text-red-500 text-xs mt-1.5 ml-1 font-medium">⚠️ {errors.customerPhone}</Text>
         )}
       </View>
 
-      <TouchableOpacity
-        onPress={() => onSelectProduct(item.id)}
-        className={`flex-row items-center bg-slate-50 border ${
-          error ? 'border-red-300' : 'border-slate-200'
-        } rounded-xl p-3 mb-3`}
-        activeOpacity={0.7}
-      >
-        <View
-          className={`w-10 h-10 rounded-lg items-center justify-center mr-3 ${
-            item.itemId ? 'bg-indigo-100' : 'bg-slate-200'
-          }`}
-        >
-          <Package size={20} color={item.itemId ? '#4F46E5' : '#94A3B8'} />
-        </View>
-        <View className="flex-1">
-          {item.itemName ? (
-            <>
-              <Text className="text-slate-800 font-bold text-base">{item.itemName}</Text>
-              <Text className="text-slate-500 text-xs">
-                {item.englishItemName} {item.weight ? `• ${item.weight}` : ''}
-              </Text>
-            </>
-          ) : (
-            <Text className="text-slate-400 font-medium italic">Tap to select product...</Text>
-          )}
-        </View>
-        <ChevronDown size={16} color="#94A3B8" />
-      </TouchableOpacity>
-
-      {error && (
-        <Text className="text-red-500 text-xs mb-2 ml-1 font-medium">⚠️ {error}</Text>
-      )}
-
-      <View className="flex-row gap-3">
-        <View className="flex-1 bg-slate-50 rounded-xl p-2 border border-slate-100">
-          <Text className="text-slate-400 text-[10px] font-bold uppercase mb-1 ml-1">Price</Text>
-          <View className="flex-row items-center">
-            <Text className="text-slate-400 text-xs mr-1">₹</Text>
-            <TextInput
-              value={item.unitPrice > 0 ? item.unitPrice.toString() : ''}
-              keyboardType="numeric"
-              className="text-slate-800 font-bold text-base p-0 min-w-[40px]"
-              onChangeText={(text) => onPriceChange(item.id, text)}
-              placeholder="0"
-              placeholderTextColor="#CBD5E1"
-            />
-          </View>
-        </View>
-
-        <View className="flex-1 bg-slate-50 rounded-xl p-2 border border-slate-100 items-center">
-          <Text className="text-slate-400 text-[10px] font-bold uppercase mb-1">Qty</Text>
-          <View className="flex-row items-center">
-            <TouchableOpacity
-              onPress={() => onQuantityChange(item.id, -1)}
-              className="bg-white rounded p-1 shadow-sm"
-              activeOpacity={0.7}
-              disabled={item.quantity <= 1}
-            >
-              <Text className={`font-bold ${item.quantity <= 1 ? 'text-slate-300' : 'text-slate-600'}`}>-</Text>
-            </TouchableOpacity>
-            <Text className="mx-3 text-slate-800 font-bold text-base min-w-[24px] text-center">{item.quantity}</Text>
-            <TouchableOpacity
-              onPress={() => onQuantityChange(item.id, 1)}
-              className="bg-white rounded p-1 shadow-sm"
-              activeOpacity={0.7}
-            >
-              <Text className="text-slate-600 font-bold">+</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View className="flex-1 bg-green-50 rounded-xl p-2 border border-green-100 justify-center items-end pr-3">
-          <Text className="text-green-600 text-[10px] font-bold uppercase mb-0.5">Total</Text>
-          <Text className="text-green-700 font-black text-lg">₹{item.amount.toFixed(0)}</Text>
-        </View>
-      </View>
+      {/* Address */}
+      
     </View>
   );
 };
+// Bill Item Card
 
 // Bill Items Section
 const BillItemsSection: React.FC<{
@@ -3206,10 +3156,10 @@ const BillItemsSection: React.FC<{
   onAddItem: () => void;
   onDeleteItem: (id: string) => void;
   onSelectProduct: (id: string) => void;
-  onQuantityChange: (id: string, delta: number) => void;
+  handleQuantityChange: (id: string, delta: number) => void;
   onPriceChange: (id: string, price: string) => void;
   errors: ValidationErrors;
-}> = ({ billItems, onAddItem, onDeleteItem, onSelectProduct, onQuantityChange, onPriceChange, errors }) => {
+}> = ({ billItems, onAddItem, onDeleteItem, onSelectProduct, handleQuantityChange, onPriceChange, errors }) => {
   return (
     <View className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
       <View className="flex-row justify-between items-center mb-4">
@@ -3230,17 +3180,17 @@ const BillItemsSection: React.FC<{
       </View>
 
       {billItems.map((item, index) => (
-        <BillItemCard
-          key={item.id}
-          item={item}
-          index={index}
-          canDelete={billItems.length > 1}
-          onDelete={onDeleteItem}
-          onSelectProduct={onSelectProduct}
-          onQuantityChange={onQuantityChange}
-          onPriceChange={onPriceChange}
-          error={errors[`item_${index}`]}
-        />
+       <BillItemCard
+  key={item.id}
+  item={item}
+  index={index}
+  canDelete={billItems.length > 1}  
+  onDelete={onDeleteItem}
+  onSelectProduct={onSelectProduct}
+  handleQuantityChange={handleQuantityChange}
+  onPriceChange={onPriceChange}
+  error={errors[`item_${index}`]}
+/>
       ))}
     </View>
   );
@@ -3392,7 +3342,6 @@ const BillFooter: React.FC<{
   );
 };
 
-// ==================== MAIN COMPONENT ====================
 
 const CreateBillScreen = () => {
   const navigation = useNavigation<NavigationProps>();
@@ -3579,7 +3528,7 @@ const CreateBillScreen = () => {
               onAddItem={addBillItem}
               onDeleteItem={removeBillItem}
               onSelectProduct={(id) => setShowProductModal(id)}
-              onQuantityChange={updateBillItemQuantity}
+              handleQuantityChange={updateBillItemQuantity}
               onPriceChange={updateBillItemPrice}
               errors={errors}
             />

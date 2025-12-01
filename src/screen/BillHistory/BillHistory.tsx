@@ -85,69 +85,92 @@ const BillHistory = () => {
     }
   }, [searchQuery, bills]);
 
-  const getTotalAmount = () => {
-    return filteredBills.reduce((sum, bill) => sum + bill.total, 0);
-  };
 
-  const renderBill = ({ item }: { item: Bill }) => (
-    <TouchableOpacity
-      onPress={() =>
-        navigation.navigate('BillDetails' as never, { bill: item } as never)
-      }
-      className="bg-white rounded-2xl p-5 mb-3 border border-slate-100 shadow-sm active:shadow-md active:scale-[0.98]"
-      style={{
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
-      }}
-    >
-      <View className="flex-row justify-between items-start mb-3">
-        <View className="flex-1">
-          <View className="flex-row items-center mb-2">
-            <View className="bg-indigo-100 px-3 py-1 rounded-full">
-              <Text className="text-indigo-700 font-bold text-xs">
-                {item.invoice_number}
+
+const renderBill = ({ item }: { item: Bill }) => (
+  <TouchableOpacity
+    onPress={() =>
+      navigation.navigate('BillDetails' as never, { bill: item } as never)
+    }
+    className="bg-white rounded-2xl p-5 mb-3 border border-slate-100 shadow-sm active:shadow-md active:scale-[0.98]"
+    style={{
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      elevation: 2,
+    }}
+  >
+    <View className="flex-row justify-between items-start mb-3">
+      <View className="flex-1">
+
+        {/* Invoice number + status tag */}
+        <View className="flex-row items-center mb-2 space-x-2 gap-4">
+
+          {/* Invoice Number */}
+          <View className="bg-indigo-100 px-3 py-1 rounded-full">
+            <Text className="text-indigo-700 font-bold text-xs">
+              {item.invoice_number}
+            </Text>
+          </View>
+
+          {/* Status tag */}
+          {item.isgenerated ? (
+            <View className="bg-emerald-100 px-2 py-1 rounded-full">
+              <Text className="text-emerald-700 text-[10px] font-semibold">
+                Generated
               </Text>
             </View>
-          </View>
-          <Text className="text-slate-800 font-semibold text-base mb-1">
-            {item.buyer.buyer_name}
-          </Text>
-          <View className="flex-row items-center">
-            <Calendar size={12} color="#94A3B8" />
-            <Text className="text-slate-400 text-xs ml-1">
-              {item.invoice_date}
-            </Text>
-          </View>
+          ) : (
+            <View className="bg-red-100 px-2 py-1 rounded-full">
+              <Text className="text-red-700 text-[10px] font-semibold">
+                Not Generated
+              </Text>
+            </View>
+          )}
+
         </View>
-        <View className="items-end">
-          <View className="bg-emerald-50 px-3 py-2 rounded-xl mb-2">
-            <Text className="text-emerald-700 font-bold text-base">
-              ₹{item.total.toLocaleString('en-IN')}
-            </Text>
-          </View>
-          <View className="bg-slate-100 px-2 py-1 rounded-full">
-            <Text className="text-slate-600 text-xs font-medium">
-              {item.items.length} Item{item.items.length > 1 ? 's' : ''}
-            </Text>
-          </View>
-        </View>
-      </View>
-      <View className="border-t border-slate-100 pt-3 flex-row justify-between items-center">
-        <Text className="text-slate-400 text-xs">
-          Subtotal: ₹{item.subtotal.toLocaleString('en-IN')}
+
+        <Text className="text-slate-800 font-semibold text-base mb-1">
+          {item.buyer.buyer_name}
         </Text>
+
         <View className="flex-row items-center">
-          <Text className="text-indigo-600 text-xs font-semibold mr-1">
-            View Details
+          <Calendar size={12} color="#94A3B8" />
+          <Text className="text-slate-400 text-xs ml-1">
+            {item.invoice_date}
           </Text>
-          <ChevronRight size={14} color="#4F46E5" />
         </View>
       </View>
-    </TouchableOpacity>
-  );
+
+      {/* Right Block */}
+      <View className="items-end">
+        <View className="bg-emerald-50 px-3 py-2 rounded-xl mb-2">
+          <Text className="text-emerald-700 font-bold text-base">
+            ₹{item.total.toLocaleString('en-IN')}
+          </Text>
+        </View>
+        <View className="bg-slate-100 px-2 py-1 rounded-full">
+          <Text className="text-slate-600 text-xs font-medium">
+            {item.items.length} Item{item.items.length > 1 ? 's' : ''}
+          </Text>
+        </View>
+      </View>
+    </View>
+
+    <View className="border-t border-slate-100 pt-3 flex-row justify-between items-center">
+      <Text className="text-slate-400 text-xs">
+        Subtotal: ₹{item.subtotal.toLocaleString('en-IN')}
+      </Text>
+      <View className="flex-row items-center">
+        <Text className="text-indigo-600 text-xs font-semibold mr-1">
+          View Details
+        </Text>
+        <ChevronRight size={14} color="#4F46E5" />
+      </View>
+    </View>
+  </TouchableOpacity>
+);
 
   const EmptyState = () => (
     <View className="flex-1 justify-center items-center py-20">

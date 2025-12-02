@@ -353,25 +353,57 @@ const handleDownloadPdf = async (bill: Bill) => {
 };
 
 
-  const handleSharePdf = async (bill: Bill) => {
-    try {
-      if (!bill.pdf_url) {
-        console.log('PDF URL not available');
-        return;
-      }
 
-      const shareOptions = {
-        title: `Bill ${bill.invoice_number}`,
-        message: `Bill for ${bill.buyer.buyer_name} - Total: ₹${bill.total}`,
-        url: bill.pdf_url,
-      };
+const handleSharePdf = async (bill: Bill) => {
+  console.log(bill,"BILL TO SHARE")
+  if (!bill.pdf_url) {
+    Alert.alert('Error', 'PDF URL not available');
+    return;
+  }
 
-      await Share.open(shareOptions);
-    } catch (error) {
-      console.error('Share error:', error);
+  try {
+    const { dirs } = ReactNativeBlobUtil.fs;
+    const fileName = `Invoice_${bill.invoice_number}.pdf`;
+    const tempPath = `${dirs.CacheDir}/${fileName}`;
+let pdfFullUrl = bill.pdf_url;
+
+// Make sure it starts with /
+if (!pdfFullUrl.startsWith('/')) {
+  pdfFullUrl = '/' + pdfFullUrl;
+}
+
+pdfFullUrl = API_URL + pdfFullUrl;
+
+const response = await ReactNativeBlobUtil.config({
+  fileCache: true,
+  path: tempPath,
+}).fetch('GET', pdfFullUrl);
+    // Share from local path
+    const shareOptions = {
+      title: `Bill ${bill.invoice_number}`,
+      message: `Bill for ${bill.buyer.buyer_name} - Total: ₹${bill.total}`,
+      url: Platform.OS === 'ios' ? response.path() : `file://${response.path()}`,
+      type: 'application/pdf',
+      subject: `Invoice ${bill.invoice_number}`,
+      failOnCancel: false,
+    };
+
+    await Share.open(shareOptions);
+
+    // Optional: cleanup temp file after 5 seconds
+    setTimeout(() => {
+      ReactNativeBlobUtil.fs.unlink(response.path()).catch((err) => {
+        console.log('Cleanup error:', err);
+      });
+    }, 5000);
+
+  } catch (error: any) {
+    console.error('Share error:', error);
+    if (error.message !== 'User did not share') {
+      Toast.error('Failed to share PDF');
     }
-  };
-
+  }
+};
   const handlePrintPdf = async (bill: Bill) => {
     try {
       if (!bill.pdf_url) {

@@ -1,0 +1,3492 @@
+// import React, { useEffect, useState, useMemo, useRef } from 'react';
+// import {
+//   View,
+//   Text,
+//   TouchableOpacity,
+//   StatusBar,
+//   ScrollView,
+//   TextInput,
+//   ActivityIndicator,
+//   Animated,
+//   Modal,
+//   Keyboard,
+//   Platform,
+//   KeyboardAvoidingView,
+// } from 'react-native';
+// import {
+//   Plus,
+//   Trash2,
+//   User,
+//   Package,
+//   Save,
+//   FileText,
+//   Search,
+//   X,
+//   CheckCircle,
+//   AlertCircle,
+//   MapPin,
+//   Mail,
+//   CreditCard,
+//   Building2,
+//   ShoppingCart,
+//   ChevronDown,
+//   Briefcase,
+//   Smartphone,
+// } from 'lucide-react-native';
+// import { getProduct } from '../../services/Apis/GetItem.api';
+// import { SafeAreaView } from 'react-native-safe-area-context';
+// import { saveBill } from '../../services/Apis/saveBill';
+// import ToastNotification from '../../components/toastModel/ToastNotification';
+// import { getNextInvoice } from '../../services/Apis/getNextInvoice';
+// import { Toast } from '../../components/toastModel/ToastModel';
+// import { useNavigation } from '@react-navigation/native';
+// import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+// import { RootStackParamList } from '../../types_interface/navigation.type';
+// type NAvigationProps = NativeStackNavigationProp<
+//   RootStackParamList
+// >;
+// interface AddProduct {
+//   id: number;
+//   name: string;
+//   name_english: string;
+//   weight?: string;
+//   price: number;
+//   stock?: number;
+// }
+
+// interface CustomerDetails {
+//   name: string;
+//   phone: string;
+//   email: string;
+//   address: string;
+// }
+
+// interface BillItem {
+//   id: string;
+//   itemId: number;
+//   itemName: string;
+//   englishItemName: string;
+//   quantity: number;
+//   unitPrice: number;
+//   amount: number;
+//   weight: string;
+// }
+
+
+// const CreateBillScreen = () => {
+//   // --- Constants & Config ---
+//   const companyDetails = {
+//     name: 'NETHRA FOOD PRODUCTS',
+//     address: '33, Bharathidasen Street, Mutharayarpalayam, Puducherry - 605003',
+//     phone: '9688537216',
+//     gst: '33AAVFN1234A1Z5', // Example GST
+//   };
+
+//   const bankDetails = {
+//     bankName: 'BANK OF BARODA',
+//     accountNo: '69480100012900',
+//     ifscCode: 'BARB0VJRAJI',
+//     branch: 'Pondicherry',
+//   };
+// const transformBillForBackend = () => {
+//   return {
+//     buyer: {
+//       buyer_name: customer.name.trim(),
+//       phone: customer.phone.trim(),
+//       address: customer.address.trim(),
+//     },
+//     invoice_date: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+//     subtotal: subTotal,
+//     total: subTotal, // or add taxes if needed
+//     bill_items: billItems.map(item => ({
+//       item_id: item.itemId,
+//       qty: item.quantity,
+//       price: item.unitPrice,
+//       amount: item.amount,
+//       item_name: item.itemName,
+//     })),
+//   };
+// };
+
+//   // --- State ---
+//   const [invoiceNo,setInvoiceNo] = useState('');
+//   const [availableProducts, setAvailableProducts] = useState<AddProduct[]>([]);
+//   const [isLoading, setIsLoading] = useState(true);
+//   const [isSaving, setIsSaving] = useState(false);
+//   const [searchQuery, setSearchQuery] = useState('');
+//   const [showProductModal, setShowProductModal] = useState<string | null>(null);
+//   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+//   const [customer, setCustomer] = useState<CustomerDetails>({
+//     name: '',
+//     phone: '',
+//     email: '',
+//     address: '',
+//   });
+// const navigation = useNavigation<NAvigationProps>()
+//   const [billItems, setBillItems] = useState<BillItem[]>([
+//     {
+//       id: '1',
+//       itemId: 0,
+//       itemName: '',
+//       englishItemName: '',
+//       quantity: 1,
+//       unitPrice: 0,
+//       amount: 0,
+//       weight: '',
+//     },
+//   ]);
+
+//   // --- Animations ---
+//   const fadeAnim = useRef(new Animated.Value(0)).current;
+//   const slideUpAnim = useRef(new Animated.Value(100)).current;
+
+//   // --- Effects ---
+//   useEffect(() => {
+//     Animated.parallel([
+//       Animated.timing(fadeAnim, {
+//         toValue: 1,
+//         duration: 800,
+//         useNativeDriver: true,
+//       }),
+//       Animated.timing(slideUpAnim, {
+//         toValue: 0,
+//         duration: 600,
+//         useNativeDriver: true,
+//       }),
+//     ]).start();
+//   }, []);
+// useEffect(()=>{
+//     loadInitialData();
+// },[])
+//   const loadInitialData = async () => {
+//     setIsLoading(true);
+//     try {
+//      const invoice = await getNextInvoice()
+//      console.log(invoice)
+//      if(invoice){
+//      setInvoiceNo(invoice)
+
+//      }
+//      console.log(invoice,"DD")
+//       const data = await getProduct();
+//       setAvailableProducts(data || []);
+//     } catch (err) {
+//       Toast.error('Failed to load products');
+//     } finally {
+//       setIsLoading(false);
+//     }
+//   };
+
+//   // --- Computations ---
+//   const filteredProducts = useMemo(() => {
+//     if (!searchQuery.trim()) return availableProducts;
+//     const query = searchQuery.toLowerCase();
+//     return availableProducts.filter(
+//       p =>
+//         p.name.toLowerCase().includes(query) ||
+//         p.name_english.toLowerCase().includes(query),
+//     );
+//   }, [searchQuery, availableProducts]);
+
+//   const subTotal = useMemo(
+//     () => billItems.reduce((sum, item) => sum + item.amount, 0),
+//     [billItems],
+//   );
+//   // --- Actions ---
+//   const addNewItem = () => {
+//     const newItem: BillItem = {
+//       id: Date.now().toString(),
+//       itemId: 0,
+//       itemName: '',
+//       englishItemName: '',
+//       quantity: 1,
+//       unitPrice: 0,
+//       amount: 0,
+//       weight: '',
+//     };
+//     setBillItems([...billItems, newItem]);
+//   };
+
+//   const removeItem = (id: string) => {
+//     if (billItems.length > 1) {
+//       setBillItems(prev => prev.filter(item => item.id !== id));
+//     }
+//   };
+
+//   const selectProduct = (itemId: string, product: AddProduct) => {
+//     setBillItems(prevItems =>
+//       prevItems.map(item => {
+//         if (item.id !== itemId) return item;
+//         return {
+//           ...item,
+//           itemId: product.id,
+//           itemName: product.name,
+//           englishItemName: product.name_english,
+//           weight: product.weight ?? '',
+//           unitPrice: product.price,
+//           amount: item.quantity * product.price,
+//         };
+//       }),
+//     );
+//     setShowProductModal(null);
+//     setSearchQuery('');
+//   };
+
+//   const validateBillData = (): boolean => {
+//     const errors: Record<string, string> = {};
+//     if (!customer.name.trim()) errors.customerName = 'Name is required';
+//     if (customer.phone && !/^\d{10}$/.test(customer.phone))
+//       errors.customerPhone = 'Invalid phone';
+
+//     const hasInvalidItems = billItems.some((item, idx) => {
+//       if (item.itemId === 0) {
+//         errors[`item_${idx}`] = 'Select a product';
+//         return true;
+//       }
+//       return false;
+//     });
+
+//     if (subTotal <= 0) errors.total = 'Total cannot be zero';
+
+//     setFieldErrors(errors);
+//     return Object.keys(errors).length === 0;
+//   };
+
+//  const handleSaveBill = async () => {
+//     const isValid = validateBillData();
+
+//   if (!isValid) {
+
+//     const allErrors = Object.values(fieldErrors).filter(msg => msg).join('\n');
+//     Toast.error(allErrors || 'Please check the form for errors.');
+//     return;
+//   }
+//   setIsSaving(true);
+//   Keyboard.dismiss();
+
+//   try {
+//     const backendPayload = transformBillForBackend();
+//     console.log("Payload to backend:", backendPayload);
+
+//     const result = await saveBill(backendPayload); 
+//     console.log(result)
+//     Toast.success('Bill generated successfully!');
+
+//     setTimeout(() => {
+//       setIsSaving(false);
+//      navigation.navigate('HomeScreen')
+//     }, 1000);
+//   } catch (error) {
+//     Toast.error('Failed to save');
+//     setIsSaving(false);
+//   }
+// };
+
+
+//   const handleNameChange = (t: string) => {
+//     setCustomer(prev => ({ ...prev, name: t }));
+//     setFieldErrors(prev => ({ ...prev, customerName: '' }));
+//   };
+
+//   const handlePhoneChange = (t: string) => {
+//     setCustomer(prev => ({ ...prev, phone: t }));
+//     setFieldErrors(prev => ({ ...prev, customerPhone: '' }));
+//   };
+
+//   const handleAddressChange = (t: string) => {
+//     setCustomer(prev => ({ ...prev, address: t }));
+//   };
+
+//   const SectionHeader = ({ icon: Icon, title, color = '#4F46E5' }: any) => (
+//     <View className="flex-row items-center mb-4">
+//       <View className={`p-2 rounded-lg bg-indigo-50 mr-3`}>
+//         <Icon color={color} size={20} strokeWidth={2.5} />
+//       </View>
+//       <Text className="text-slate-800 font-bold text-lg tracking-tight">
+//         {title}
+//       </Text>
+//     </View>
+//   );
+ 
+
+//   if (isLoading) {
+//     return (
+//       <View className="flex-1 bg-white justify-center items-center">
+//         <ActivityIndicator size="large" color="#4F46E5" />
+//         <Text className="text-slate-500 mt-4 font-medium tracking-wide">
+//           Preparing Dashboard...
+//         </Text>
+//       </View>
+//     );
+//   }
+
+//   return (
+//     <SafeAreaView className="flex-1 bg-slate-50">
+//       <StatusBar barStyle="dark-content" backgroundColor="#0F172A" />
+//     <ToastNotification/>
+//       <View className="bg-blue-900 pb-6 pt-2 px-6 shadow-lg z-10">
+//         <View className="flex-row justify-between items-start">
+//           <View>
+//             <Text className="text-slate-400 text-xs font-bold tracking-widest uppercase mb-1">
+//               New Invoice
+//             </Text>
+//             <Text className="text-white text-2xl font-black tracking-tight">
+//               Create Bill
+//             </Text>
+//             <Text className="text-white text-sm font-medium mt-1">
+//               {companyDetails.name}
+//             </Text>
+//           </View>
+//           <View className="items-end justify-center my-auto">
+//             <View className="bg-indigo-600/20 px-3 py-1 rounded-full border border-indigo-500/30 mb-1 my-auto">
+//               <Text className="text-indigo-300 text-lg font-bold">
+//                 {invoiceNo}
+//               </Text>
+//             </View>
+           
+//           </View>
+//         </View>
+//       </View>
+
+//       <KeyboardAvoidingView
+//         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+//         className="flex-1"
+//       >
+//         <ScrollView
+//           className="flex-1"
+//           showsVerticalScrollIndicator={false}
+//           contentContainerStyle={{ paddingBottom: 140 }}
+//         >
+//           <Animated.View
+//             style={{
+//               opacity: fadeAnim,
+//               transform: [{ translateY: slideUpAnim }],
+//             }}
+//             className="px-5 pt-6 space-y-6"
+//           >
+//      <View className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+//   <SectionHeader
+//     icon={User}
+//     title="Customer Details"
+//     color="#4F46E5"
+//   />
+
+//   {/* Customer / Business Name */}
+//   <View className="mb-4 flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+//     <Briefcase color="#64748B" size={20} />
+//     <TextInput
+//       className="flex-1 ml-3 text-slate-800 font-medium text-base"
+//       placeholder="Customer / Business Name *"
+//       placeholderTextColor="#94A3B8"
+//       value={customer.name}
+//       onChangeText={handleNameChange}
+//     />
+//   </View>
+
+//   {/* Phone */}
+//   <View className="mb-4 flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+//   <Smartphone color="#64748B" size={20} />
+//   <TextInput
+//     className="flex-1 ml-3 text-slate-800 font-medium text-base"
+//     placeholder="Phone"
+//     placeholderTextColor="#94A3B8"
+//     keyboardType="number-pad"
+//     maxLength={10} // Limit to 10 digits
+//     value={customer.phone}
+//     onChangeText={(text) => {
+//       // Remove non-digit characters
+//       const digitsOnly = text.replace(/\D/g, '');
+//       handlePhoneChange(digitsOnly);
+//     }}
+//   />
+// </View>
+
+
+//   {/* Delivery Address */}
+//   <View className="mb-4 flex-row items-start bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+//     <MapPin color="#64748B" size={20} style={{ marginTop: 6 }} />
+//     <TextInput
+//       className="flex-1 ml-3 text-slate-800 font-medium text-base"
+//       placeholder="Delivery Address"
+//       placeholderTextColor="#94A3B8"
+//       multiline
+//       numberOfLines={3}
+//       value={customer.address}
+//       onChangeText={handleAddressChange}
+//     />
+//   </View>
+// </View>
+
+//             {/* Items Section */}
+//             <View className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+//               <View className="flex-row justify-between items-center mb-4">
+//                 <SectionHeader
+//                   icon={ShoppingCart}
+//                   title="Items Cart"
+//                   color="#F59E0B"
+//                 />
+//                 <TouchableOpacity
+//                   onPress={addNewItem}
+//                   className="bg-indigo-50 px-3 py-1.5 rounded-full flex-row items-center border border-indigo-100"
+//                 >
+//                   <Plus size={14} color="#4F46E5" />
+//                   <Text className="text-indigo-600 text-xs font-bold ml-1">
+//                     ADD ITEM
+//                   </Text>
+//                 </TouchableOpacity>
+//               </View>
+
+//               {billItems.map((item, index) => (
+//                 <View
+//                   key={item.id}
+//                   className="mb-4 pb-4 border-b border-slate-100 last:border-0 last:mb-0 last:pb-0"
+//                 >
+//                   <View className="flex-row justify-between mb-2">
+//                     <Text className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+//                       Item #{index + 1}
+//                     </Text>
+//                     {billItems.length > 1 && (
+//                       <TouchableOpacity onPress={() => removeItem(item.id)}>
+//                         <Trash2 size={16} color="#EF4444" />
+//                       </TouchableOpacity>
+//                     )}
+//                   </View>
+
+//                   <TouchableOpacity
+//                     onPress={() => setShowProductModal(item.id)}
+//                     className={`flex-row items-center bg-slate-50 border ${
+//                       fieldErrors[`item_${index}`]
+//                         ? 'border-red-300'
+//                         : 'border-slate-200'
+//                     } rounded-xl p-3 mb-3`}
+//                   >
+//                     <View
+//                       className={`w-10 h-10 rounded-lg items-center justify-center mr-3 ${
+//                         item.itemId ? 'bg-indigo-100' : 'bg-slate-200'
+//                       }`}
+//                     >
+//                       <Package
+//                         size={20}
+//                         color={item.itemId ? '#4F46E5' : '#94A3B8'}
+//                       />
+//                     </View>
+//                     <View className="flex-1">
+//                       {item.itemName ? (
+//                         <>
+//                           <Text className="text-slate-800 font-bold text-base">
+//                             {item.itemName}
+//                           </Text>
+//                           <Text className="text-slate-500 text-xs">
+//                             {item.englishItemName}{' '}
+//                             {item.weight ? `• ${item.weight}` : ''}
+//                           </Text>
+//                         </>
+//                       ) : (
+//                         <Text className="text-slate-400 font-medium italic">
+//                           Tap to select product...
+//                         </Text>
+//                       )}
+//                     </View>
+//                     <ChevronDown size={16} color="#94A3B8" />
+//                   </TouchableOpacity>
+
+//                   {/* Calculations */}
+//                   <View className="flex-row gap-3">
+//                     <View className="flex-1 bg-slate-50 rounded-xl p-2 border border-slate-100">
+//                       <Text className="text-slate-400 text-[10px] font-bold uppercase mb-1 ml-1">
+//                         Price
+//                       </Text>
+//                       <View className="flex-row items-center">
+//                         <Text className="text-slate-400 text-xs mr-1">₹</Text>
+//                         <TextInput
+//                           value={item.unitPrice.toString()}
+//                           keyboardType="numeric"
+//                           className="text-slate-800 font-bold text-base p-0 min-w-[40px]"
+//                           onChangeText={text => {
+//                             const price = parseFloat(text) || 0;
+//                             setBillItems(prev =>
+//                               prev.map(i =>
+//                                 i.id === item.id
+//                                   ? {
+//                                       ...i,
+//                                       unitPrice: price,
+//                                       amount: i.quantity * price,
+//                                     }
+//                                   : i,
+//                               ),
+//                             );
+//                           }}
+//                         />
+//                       </View>
+//                     </View>
+//                     <View className="flex-1 bg-slate-50 rounded-xl p-2 border border-slate-100 items-center">
+//                       <Text className="text-slate-400 text-[10px] font-bold uppercase mb-1">
+//                         Qty
+//                       </Text>
+//                       <View className="flex-row items-center">
+//                         <TouchableOpacity
+//                           onPress={() => {
+//                             const newQty = Math.max(1, item.quantity - 1);
+//                             setBillItems(prev =>
+//                               prev.map(i =>
+//                                 i.id === item.id
+//                                   ? {
+//                                       ...i,
+//                                       quantity: newQty,
+//                                       amount: newQty * i.unitPrice,
+//                                     }
+//                                   : i,
+//                               ),
+//                             );
+//                           }}
+//                           className="bg-white rounded p-1 shadow-sm"
+//                         >
+//                           <Text className="text-slate-600 font-bold">-</Text>
+//                         </TouchableOpacity>
+//                         <Text className="mx-3 text-slate-800 font-bold text-base">
+//                           {item.quantity}
+//                         </Text>
+//                         <TouchableOpacity
+//                           onPress={() => {
+//                             const newQty = item.quantity + 1;
+//                             setBillItems(prev =>
+//                               prev.map(i =>
+//                                 i.id === item.id
+//                                   ? {
+//                                       ...i,
+//                                       quantity: newQty,
+//                                       amount: newQty * i.unitPrice,
+//                                     }
+//                                   : i,
+//                               ),
+//                             );
+//                           }}
+//                           className="bg-white rounded p-1 shadow-sm"
+//                         >
+//                           <Text className="text-slate-600 font-bold">+</Text>
+//                         </TouchableOpacity>
+//                       </View>
+//                     </View>
+//                     <View className="flex-1 bg-green-50 rounded-xl p-2 border border-green-100 justify-center items-end pr-3">
+//                       <Text className="text-green-600 text-[10px] font-bold uppercase mb-0.5">
+//                         Total
+//                       </Text>
+//                       <Text className="text-green-700 font-black text-lg">
+//                         ₹{item.amount.toFixed(0)}
+//                       </Text>
+//                     </View>
+//                   </View>
+//                 </View>
+//               ))}
+//             </View>
+
+         
+
+//             {/* Spacer for sticky footer */}
+//             <View className="h-6" />
+//           </Animated.View>
+//         </ScrollView>
+//       </KeyboardAvoidingView>
+
+//       {/* Sticky Footer & Total */}
+//       <View className="absolute bottom-0 w-full bg-white border-t border-slate-200 pb-6 pt-4 px-5 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] rounded-t-3xl">
+//         <View className="flex-row justify-between items-end mb-4">
+//           <View>
+//             <Text className="text-slate-400 text-xs font-bold uppercase tracking-wide mb-1">
+//               Total Amount
+//             </Text>
+//             <Text className="text-slate-900 text-3xl font-black tracking-tight">
+//               ₹{subTotal.toFixed(2)}
+//             </Text>
+//           </View>
+//           <View className="bg-green-100 px-3 py-1 rounded-full">
+//             <Text className="text-green-700 text-xs font-bold">
+//               {billItems.length} Items
+//             </Text>
+//           </View>
+//         </View>
+
+//         <TouchableOpacity
+//           onPress={handleSaveBill}
+//           disabled={isSaving}
+//           className="bg-indigo-600 w-full py-4 rounded-2xl flex-row items-center justify-center shadow-lg shadow-indigo-200 active:bg-indigo-700"
+//         >
+//           {isSaving ? (
+//             <ActivityIndicator color="white" />
+//           ) : (
+//             <>
+//               <Text className="text-white font-bold text-lg mr-2">
+//                 Generate Invoice
+//               </Text>
+//               <FileText color="white" size={20} strokeWidth={2.5} />
+//             </>
+//           )}
+//         </TouchableOpacity>
+//       </View>
+
+//       {/* Product Search Modal */}
+//       <Modal
+//         visible={showProductModal !== null}
+//         transparent
+//         animationType="slide"
+//         onRequestClose={() => setShowProductModal(null)}
+//       >
+//         <View className="flex-1 bg-slate-900/60 justify-end">
+//           {/* Close on tap outside */}
+//           <TouchableOpacity
+//             className="flex-1"
+//             onPress={() => setShowProductModal(null)}
+//           />
+
+//           <View className="bg-slate-50 h-[75%] rounded-t-[32px] overflow-hidden">
+//             {/* Drag Handle */}
+//             <View className="w-full items-center pt-3 pb-2 bg-white">
+//               <View className="w-12 h-1.5 bg-slate-300 rounded-full" />
+//             </View>
+
+//             <View className="px-5 pb-4 bg-white border-b border-slate-100">
+//               <Text className="text-xl font-black text-slate-800 mb-4">
+//                 Select Product
+//               </Text>
+//               <View className="flex-row items-center bg-slate-100 rounded-xl px-4 h-12">
+//                 <Search color="#94A3B8" size={20} />
+//                 <TextInput
+//                   className="flex-1 ml-3 text-slate-800 font-medium text-base"
+//                   placeholder="Search products..."
+//                   placeholderTextColor="#94A3B8"
+//                   value={searchQuery}
+//                   onChangeText={setSearchQuery}
+//                   autoFocus
+//                 />
+//                 {searchQuery.length > 0 && (
+//                   <TouchableOpacity onPress={() => setSearchQuery('')}>
+//                     <X size={18} color="#94A3B8" />
+//                   </TouchableOpacity>
+//                 )}
+//               </View>
+//             </View>
+
+//             <ScrollView
+//               className="flex-1 px-5 pt-4"
+//               contentContainerStyle={{ paddingBottom: 40 }}
+//             >
+//               {filteredProducts.length > 0 ? (
+//                 filteredProducts.map(item => (
+//                   <TouchableOpacity
+//                     key={item.id}
+//                     onPress={() => selectProduct(showProductModal!, item)}
+//                     className="bg-white p-4 rounded-2xl mb-3 border border-slate-100 shadow-sm flex-row justify-between items-center active:scale-[0.98]"
+//                   >
+//                     <View className="flex-1">
+//                       <Text className="text-slate-800 font-bold text-base mb-0.5">
+//                         {item.name}
+//                       </Text>
+//                       <Text className="text-slate-500 text-sm mb-2">
+//                         {item.name_english}
+//                       </Text>
+//                       <View className="flex-row gap-2">
+//                         {item.weight && (
+//                           <View className="bg-slate-100 px-2 py-0.5 rounded text-xs">
+//                             <Text className="text-slate-600 text-xs font-bold">
+//                               {item.weight}
+//                             </Text>
+//                           </View>
+//                         )}
+//                         <View className="bg-indigo-50 px-2 py-0.5 rounded text-xs">
+                         
+//                         </View>
+//                       </View>
+//                     </View>
+//                     <View className="items-end">
+//                       <Text className="text-lg font-black text-slate-800">
+//                         ₹{item.price}
+//                       </Text>
+//                       <View className="bg-indigo-600 rounded-full p-1 mt-1">
+//                         <Plus size={16} color="white" />
+//                       </View>
+//                     </View>
+//                   </TouchableOpacity>
+//                 ))
+//               ) : (
+//                 <View className="items-center py-10 opacity-50">
+//                   <Package size={48} color="#94A3B8" />
+//                   <Text className="text-slate-500 font-medium mt-4">
+//                     No products found
+//                   </Text>
+//                 </View>
+//               )}
+//             </ScrollView>
+//           </View>
+//         </View>
+//       </Modal>
+//     </SafeAreaView>
+//   );
+// };
+
+// export default CreateBillScreen;
+
+
+
+// import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+// import {
+//   View,
+//   Text,
+//   TouchableOpacity,
+//   StatusBar,
+//   ScrollView,
+//   TextInput,
+//   ActivityIndicator,
+//   Animated,
+//   Modal,
+//   Keyboard,
+//   Platform,
+//   KeyboardAvoidingView,
+// } from 'react-native';
+// import {
+//   Plus,
+//   Trash2,
+//   User,
+//   Package,
+//   FileText,
+//   Search,
+//   X,
+//   CheckCircle,
+//   MapPin,
+//   ChevronDown,
+//   Briefcase,
+//   Smartphone,
+//   ShoppingCart,
+// } from 'lucide-react-native';
+// import { SafeAreaView } from 'react-native-safe-area-context';
+// import { useNavigation } from '@react-navigation/native';
+// import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+// // Services
+// import { getProduct } from '../../services/Apis/GetItem.api';
+// import { saveBill } from '../../services/Apis/saveBill';
+// import { getNextInvoice } from '../../services/Apis/getNextInvoice';
+
+// // Components
+// import ToastNotification from '../../components/toastModel/ToastNotification';
+// import { Toast } from '../../components/toastModel/ToastModel';
+
+// // Types
+// import { RootStackParamList } from '../../types_interface/navigation.type';
+// import { searchCustomers } from './APi/searchCustomer';
+
+// type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
+
+// interface AddProduct {
+//   id: number;
+//   name: string;
+//   name_english: string;
+//   weight?: string;
+//   price: number;
+//   stock?: number;
+// }
+
+// interface CustomerDetails {
+//   buyer_name: string;
+//   phone: string;
+//   email: string;
+//   address: string;
+// }
+
+// interface BillItem {
+//   id: string;
+//   itemId: number;
+//   itemName: string;
+//   englishItemName: string;
+//   quantity: number;
+//   unitPrice: number;
+//   amount: number;
+//   weight: string;
+// }
+
+// // Constants
+// const COMPANY_DETAILS = {
+//   name: 'NETHRA FOOD PRODUCTS',
+//   address: '33, Bharathidasen Street, Mutharayarpalayam, Puducherry - 605003',
+//   phone: '9688537216',
+//   gst: '33AAVFN1234A1Z5',
+// };
+
+// const BANK_DETAILS = {
+//   bankName: 'BANK OF BARODA',
+//   accountNo: '69480100012900',
+//   ifscCode: 'BARB0VJRAJI',
+//   branch: 'Pondicherry',
+// };
+
+// const INITIAL_BILL_ITEM: BillItem = {
+//   id: '1',
+//   itemId: 0,
+//   itemName: '',
+//   englishItemName: '',
+//   quantity: 1,
+//   unitPrice: 0,
+//   amount: 0,
+//   weight: '',
+// };
+
+// const INITIAL_CUSTOMER: CustomerDetails = {
+//   buyer_name: '',
+//   phone: '',
+//   email: '',
+//   address: '',
+// };
+
+// // Utility Functions
+// const debounce = (func: Function, delay: number) => {
+//   let timeoutId: number; // NOT NodeJS.Timeout
+//   return (...args: any[]) => {
+//     clearTimeout(timeoutId);
+//     timeoutId = setTimeout(() => func(...args), delay);
+//   };
+// };
+
+
+// const CreateBillScreen = () => {
+//   const navigation = useNavigation<NavigationProps>();
+
+//   // State Management
+//   const [invoiceNo, setInvoiceNo] = useState('');
+//   const [availableProducts, setAvailableProducts] = useState<AddProduct[]>([]);
+//   const [isLoading, setIsLoading] = useState(true);
+//   const [isSaving, setIsSaving] = useState(false);
+//   const [searchQuery, setSearchQuery] = useState('');
+//   const [showProductModal, setShowProductModal] = useState<string | null>(null);
+//   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  
+//   // Customer Auto-Suggestion States
+// const [customer, setCustomer] = useState<CustomerDetails>(INITIAL_CUSTOMER);
+// const [customerSuggestions, setCustomerSuggestions] = useState<CustomerDetails[]>([]);
+// const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
+// const [isSearchingCustomers, setIsSearchingCustomers] = useState(false);
+// const [hasManuallySelected, setHasManuallySelected] = useState(false);
+//   const [billItems, setBillItems] = useState<BillItem[]>([INITIAL_BILL_ITEM]);
+
+//   // Animation Refs
+//   const fadeAnim = useRef(new Animated.Value(0)).current;
+//   const slideUpAnim = useRef(new Animated.Value(100)).current;
+
+// const debouncedSearchCustomers = useRef(
+//   debounce(async (searchText: string) => {
+//     // Don't search if less than 3 characters
+//     if (searchText.length < 3) {
+//       setCustomerSuggestions([]);
+//       setShowCustomerSuggestions(false);
+//       setIsSearchingCustomers(false);
+//       return;
+//     }
+    
+//     // Set loading state briefly - will auto-clear after search
+//     setIsSearchingCustomers(true);
+    
+//     try {
+//       const results = await searchCustomers(searchText);
+//       const transformedResults = (results || []).map(result => ({
+//         buyer_name: result.buyer_name || '',
+//         phone: result.phone || '',
+//         email: result.email || '',
+//         address: result.address || '',
+//       }));
+      
+//       setCustomerSuggestions(transformedResults);
+//       // Only show dropdown if results found
+//       setShowCustomerSuggestions(transformedResults.length > 0);
+      
+//     } catch (error) {
+//       console.error('Customer search error:', error);
+//       setCustomerSuggestions([]);
+//       setShowCustomerSuggestions(false);
+//     } finally {
+//       // Always clear loading state so user can continue typing
+//       setIsSearchingCustomers(false);
+//     }
+//   }, 1000) // Increased to 1 second for smoother typing
+// ).current;
+// const handleNameFocus = useCallback(() => {
+//   // Show suggestions if available and name length >= 3
+//   if (!hasManuallySelected && customerSuggestions.length > 0 && customer.buyer_name.length >= 3) {
+//     setShowCustomerSuggestions(true);
+//   }
+// }, [hasManuallySelected, customerSuggestions.length, customer.buyer_name]);
+
+// const handleNameBlur = useCallback(() => {
+//   // Small delay to allow tap on suggestion
+//   setTimeout(() => {
+//     setShowCustomerSuggestions(false);
+//   }, 150);
+// }, []);
+
+
+//   // Effects
+//   useEffect(() => {
+//     Animated.parallel([
+//       Animated.timing(fadeAnim, {
+//         toValue: 1,
+//         duration: 800,
+//         useNativeDriver: true,
+//       }),
+//       Animated.timing(slideUpAnim, {
+//         toValue: 0,
+//         duration: 600,
+//         useNativeDriver: true,
+//       }),
+//     ]).start();
+//   }, []);
+
+//   useEffect(() => {
+//     loadInitialData();
+//   }, []);
+
+//   useEffect(() => {
+//     const keyboardDidHide = Keyboard.addListener('keyboardDidHide', () => {
+//       setShowCustomerSuggestions(false);
+//     });
+
+//     return () => {
+//       keyboardDidHide.remove();
+//     };
+//   }, []);
+
+//   // Data Loading
+//   const loadInitialData = async () => {
+//     setIsLoading(true);
+//     try {
+//       const [invoice, products] = await Promise.all([
+//         getNextInvoice(),
+//         getProduct(),
+//       ]);
+
+//       if (invoice) setInvoiceNo(invoice);
+//       setAvailableProducts(products || []);
+//     } catch (err) {
+//       Toast.error('Failed to load initial data');
+//       console.error(err);
+//     } finally {
+//       setIsLoading(false);
+//     }
+//   };
+// const handleNameChange = useCallback((text: string) => {
+//   // ✅ Update text immediately
+//   setCustomer(prev => ({ ...prev, buyer_name: text }));
+//   setFieldErrors(prev => ({ ...prev, customerName: '' }));
+  
+//   // Reset manual selection
+//   if (hasManuallySelected) {
+//     setHasManuallySelected(false);
+//   }
+  
+//   // Handle search
+//   if (text.length < 3) {
+//     setShowCustomerSuggestions(false);
+//     setCustomerSuggestions([]);
+//     setIsSearchingCustomers(false);
+//   } else {
+//     debouncedSearchCustomers(text);
+//   }
+// }, []);
+// const handlePhoneChange = useCallback((text: string) => {
+//   const digitsOnly = text.replace(/\D/g, '');
+//   setCustomer(prev => ({ ...prev, phone: digitsOnly }));
+//   setFieldErrors(prev => ({ ...prev, customerPhone: '' }));
+// }, []);
+
+// const handleAddressChange = useCallback((text: string) => {
+//   setCustomer(prev => ({ ...prev, address: text }));
+// }, []);
+//   const filteredProducts = useMemo(() => {
+//     if (!searchQuery.trim()) return availableProducts;
+//     const query = searchQuery.toLowerCase();
+//     return availableProducts.filter(
+//       p =>
+//         p.name.toLowerCase().includes(query) ||
+//         p.name_english.toLowerCase().includes(query),
+//     );
+//   }, [searchQuery, availableProducts]);
+
+//   const subTotal = useMemo(
+//     () => billItems.reduce((sum, item) => sum + item.amount, 0),
+//     [billItems],
+//   );
+
+
+// const selectCustomerFromSuggestion = useCallback((selectedCustomer: CustomerDetails) => {
+//   setCustomer({
+//     buyer_name: selectedCustomer.buyer_name,
+//     phone: selectedCustomer.phone,
+//     email: selectedCustomer.email || '',
+//     address: selectedCustomer.address,
+//   });
+//   setShowCustomerSuggestions(false);
+//   setCustomerSuggestions([]);
+//   setHasManuallySelected(true);
+//   setIsSearchingCustomers(false);
+//   Keyboard.dismiss();
+// }, []);
+
+//   // Bill Item Handlers
+//   const addNewItem = useCallback(() => {
+//     const newItem: BillItem = {
+//       id: Date.now().toString(),
+//       itemId: 0,
+//       itemName: '',
+//       englishItemName: '',
+//       quantity: 1,
+//       unitPrice: 0,
+//       amount: 0,
+//       weight: '',
+//     };
+//     setBillItems(prev => [...prev, newItem]);
+//   }, []);
+
+//   const removeItem = useCallback((id: string) => {
+//     setBillItems(prev => (prev.length > 1 ? prev.filter(item => item.id !== id) : prev));
+//   }, []);
+
+//   const selectProduct = useCallback((itemId: string, product: AddProduct) => {
+//     setBillItems(prevItems =>
+//       prevItems.map(item => {
+//         if (item.id !== itemId) return item;
+//         return {
+//           ...item,
+//           itemId: product.id,
+//           itemName: product.name,
+//           englishItemName: product.name_english,
+//           weight: product.weight ?? '',
+//           unitPrice: product.price,
+//           amount: item.quantity * product.price,
+//         };
+//       }),
+//     );
+//     setShowProductModal(null);
+//     setSearchQuery('');
+//   }, []);
+
+//   const updateItemQuantity = useCallback((itemId: string, delta: number) => {
+//     setBillItems(prev =>
+//       prev.map(item => {
+//         if (item.id !== itemId) return item;
+//         const newQty = Math.max(1, item.quantity + delta);
+//         return {
+//           ...item,
+//           quantity: newQty,
+//           amount: newQty * item.unitPrice,
+//         };
+//       }),
+//     );
+//   }, []);
+
+//   const updateItemPrice = useCallback((itemId: string, priceText: string) => {
+//     const price = parseFloat(priceText) || 0;
+//     setBillItems(prev =>
+//       prev.map(item =>
+//         item.id === itemId
+//           ? {
+//               ...item,
+//               unitPrice: price,
+//               amount: item.quantity * price,
+//             }
+//           : item,
+//       ),
+//     );
+//   }, []);
+
+//   // Validation
+//   const validateBillData = useCallback((): boolean => {
+//     const errors: Record<string, string> = {};
+    
+//     if (!customer.buyer_name.trim()) {
+//       errors.customerName = 'Customer name is required';
+//     }
+    
+//     if (customer.phone && !/^\d{10}$/.test(customer.phone)) {
+//       errors.customerPhone = 'Phone must be 10 digits';
+//     }
+
+//     billItems.forEach((item, idx) => {
+//       if (item.itemId === 0) {
+//         errors[`item_${idx}`] = 'Please select a product';
+//       }
+//     });
+
+//     if (subTotal <= 0) {
+//       errors.total = 'Total amount cannot be zero';
+//     }
+
+//     setFieldErrors(errors);
+//     return Object.keys(errors).length === 0;
+//   }, [customer, billItems, subTotal]);
+
+//   // Save Bill
+//   const transformBillForBackend = useCallback(() => {
+//     return {
+//       buyer: {
+//         buyer_name: customer.buyer_name.trim(),
+//         phone: customer.phone.trim(),
+//         address: customer.address.trim(),
+//       },
+//       invoice_date: new Date().toISOString().split('T')[0],
+//       subtotal: subTotal,
+//       total: subTotal,
+//       bill_items: billItems.map(item => ({
+//         item_id: item.itemId,
+//         qty: item.quantity,
+//         price: item.unitPrice,
+//         amount: item.amount,
+//         item_name: item.itemName,
+//       })),
+//     };
+//   }, [customer, subTotal, billItems]);
+
+//   const handleSaveBill = async () => {
+//     const isValid = validateBillData();
+
+//     if (!isValid) {
+//       const allErrors = Object.values(fieldErrors).filter(msg => msg).join('\n');
+//       Toast.error(allErrors || 'Please check the form for errors.');
+//       return;
+//     }
+
+//     setIsSaving(true);
+//     Keyboard.dismiss();
+
+//     try {
+//       const backendPayload = transformBillForBackend();
+//       await saveBill(backendPayload);
+      
+//       Toast.success('Bill generated successfully!');
+
+//       setTimeout(() => {
+//         setIsSaving(false);
+//         navigation.navigate('HomeScreen');
+//       }, 1000);
+//     } catch (error) {
+//       console.error('Save bill error:', error);
+//       Toast.error('Failed to save bill');
+//       setIsSaving(false);
+//     }
+//   };
+
+//   // UI Components
+//   const SectionHeader = ({ icon: Icon, title, color = '#4F46E5' }: any) => (
+//     <View className="flex-row items-center mb-4">
+//       <View className="p-2 rounded-lg bg-indigo-50 mr-3">
+//         <Icon color={color} size={20} strokeWidth={2.5} />
+//       </View>
+//       <Text className="text-slate-800 font-bold text-lg tracking-tight">
+//         {title}
+//       </Text>
+//     </View>
+//   );
+
+// const CustomerSuggestionsDropdown = () => (
+//   showCustomerSuggestions && customerSuggestions.length > 0 && (
+//     <View className="mt-2 bg-white border border-indigo-200 rounded-xl shadow-2xl max-h-64 overflow-hidden">
+//       <View className="px-3 py-2 bg-indigo-50 border-b border-indigo-100">
+//         <Text className="text-indigo-600 text-xs font-bold uppercase tracking-wide">
+//           📋 Previous Customers ({customerSuggestions.length})
+//         </Text>
+//       </View>
+//       <ScrollView 
+//         nestedScrollEnabled 
+//         keyboardShouldPersistTaps="handled"
+//         showsVerticalScrollIndicator={false}
+//       >
+//         {customerSuggestions.map((suggestion, index) => (
+//           <TouchableOpacity
+//             key={`${index}`}
+//             onPress={() => selectCustomerFromSuggestion(suggestion)}
+//             className="p-4 border-b border-slate-100 active:bg-indigo-50"
+//             activeOpacity={0.7}
+//           >
+//             <View className="flex-row items-start justify-between">
+//               <View className="flex-1 mr-3">
+//                 <Text className="text-slate-900 font-bold text-base mb-1.5">
+//                   {suggestion.buyer_name}
+//                 </Text>
+//                 {suggestion.phone && (
+//                   <View className="flex-row items-center mb-1">
+//                     <View className="bg-green-100 rounded-full px-2.5 py-1">
+//                       <Text className="text-green-700 text-xs font-bold">
+//                         📱 {suggestion.phone}
+//                       </Text>
+//                     </View>
+//                   </View>
+//                 )}
+//                 {suggestion.address && (
+//                   <Text className="text-slate-500 text-sm mt-1" numberOfLines={2}>
+//                     📍 {suggestion.address}
+//                   </Text>
+//                 )}
+//               </View>
+//               <View className="bg-indigo-600 rounded-full p-2 mt-1">
+//                 <CheckCircle size={18} color="white" strokeWidth={2.5} />
+//               </View>
+//             </View>
+//           </TouchableOpacity>
+//         ))}
+//       </ScrollView>
+//     </View>
+//   )
+// );
+// const CustomerDetailsSection = () => (
+//   <View className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+//     <SectionHeader icon={User} title="Customer Details" color="#4F46E5" />
+
+//     {/* Customer Name with Auto-Suggestion */}
+//     <View className="mb-4">
+//       <View className={`flex-row items-center bg-slate-50 border ${
+//         fieldErrors.customerName ? 'border-red-300' : 'border-slate-200'
+//       } rounded-xl px-4 py-3`}>
+//         <Briefcase color="#64748B" size={20} />
+//         <TextInput
+//           className="flex-1 ml-3 text-slate-800 font-medium text-base"
+//           placeholder="Customer / Business Name *"
+//           placeholderTextColor="#94A3B8"
+//           value={customer.buyer_name}
+//           onChangeText={handleNameChange}
+//           onFocus={handleNameFocus}
+//           onBlur={handleNameBlur}
+//           autoCapitalize="words"
+//           autoCorrect={false}
+//         />
+//         {isSearchingCustomers && (
+//           <View className="ml-2">
+//             <ActivityIndicator size="small" color="#4F46E5" />
+//           </View>
+//         )}
+//       </View>
+      
+//       {/* Helper Text - Only show when typing and less than 3 chars */}
+//       {!hasManuallySelected && customer.buyer_name.length > 0 && customer.buyer_name.length < 3 && (
+//         <Text className="text-slate-400 text-xs mt-1.5 ml-1">
+//           💡 Type at least 3 characters to search previous customers
+//         </Text>
+//       )}
+      
+//       {/* Error Message */}
+//       {fieldErrors.customerName && (
+//         <Text className="text-red-500 text-xs mt-1.5 ml-1 font-medium">
+//           ⚠️ {fieldErrors.customerName}
+//         </Text>
+//       )}
+      
+//       {/* Suggestions Dropdown */}
+//       <CustomerSuggestionsDropdown />
+//     </View>
+
+//     {/* Phone */}
+//     <View className="mb-4">
+//       <View className={`flex-row items-center bg-slate-50 border ${
+//         fieldErrors.customerPhone ? 'border-red-300' : 'border-slate-200'
+//       } rounded-xl px-4 py-3`}>
+//         <Smartphone color="#64748B" size={20} />
+//         <TextInput
+//           className="flex-1 ml-3 text-slate-800 font-medium text-base"
+//           placeholder="Phone Number"
+//           placeholderTextColor="#94A3B8"
+//           keyboardType="number-pad"
+//           maxLength={10}
+//           value={customer.phone}
+//           onChangeText={handlePhoneChange}
+//         />
+//       </View>
+//       {fieldErrors.customerPhone && (
+//         <Text className="text-red-500 text-xs mt-1.5 ml-1 font-medium">
+//           ⚠️ {fieldErrors.customerPhone}
+//         </Text>
+//       )}
+//     </View>
+
+//     {/* Address */}
+//     <View className="flex-row items-start bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+//       <MapPin color="#64748B" size={20} style={{ marginTop: 6 }} />
+//       <TextInput
+//         className="flex-1 ml-3 text-slate-800 font-medium text-base"
+//         placeholder="Delivery Address"
+//         placeholderTextColor="#94A3B8"
+//         multiline
+//         numberOfLines={3}
+//         value={customer.address}
+//         onChangeText={handleAddressChange}
+//         textAlignVertical="top"
+//       />
+//     </View>
+//   </View>
+// );
+//   const BillItemCard = ({ item, index }: { item: BillItem; index: number }) => (
+//     <View className="mb-4 pb-4 border-b border-slate-100 last:border-0 last:mb-0 last:pb-0">
+//       <View className="flex-row justify-between mb-2">
+//         <Text className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+//           Item #{index + 1}
+//         </Text>
+//         {billItems.length > 1 && (
+//           <TouchableOpacity onPress={() => removeItem(item.id)}>
+//             <Trash2 size={16} color="#EF4444" />
+//           </TouchableOpacity>
+//         )}
+//       </View>
+
+//       <TouchableOpacity
+//         onPress={() => setShowProductModal(item.id)}
+//         className={`flex-row items-center bg-slate-50 border ${
+//           fieldErrors[`item_${index}`] ? 'border-red-300' : 'border-slate-200'
+//         } rounded-xl p-3 mb-3`}
+//       >
+//         <View
+//           className={`w-10 h-10 rounded-lg items-center justify-center mr-3 ${
+//             item.itemId ? 'bg-indigo-100' : 'bg-slate-200'
+//           }`}
+//         >
+//           <Package size={20} color={item.itemId ? '#4F46E5' : '#94A3B8'} />
+//         </View>
+//         <View className="flex-1">
+//           {item.itemName ? (
+//             <>
+//               <Text className="text-slate-800 font-bold text-base">
+//                 {item.itemName}
+//               </Text>
+//               <Text className="text-slate-500 text-xs">
+//                 {item.englishItemName} {item.weight ? `• ${item.weight}` : ''}
+//               </Text>
+//             </>
+//           ) : (
+//             <Text className="text-slate-400 font-medium italic">
+//               Tap to select product...
+//             </Text>
+//           )}
+//         </View>
+//         <ChevronDown size={16} color="#94A3B8" />
+//       </TouchableOpacity>
+
+//       {/* Price, Quantity, Total */}
+//       <View className="flex-row gap-3">
+//         <View className="flex-1 bg-slate-50 rounded-xl p-2 border border-slate-100">
+//           <Text className="text-slate-400 text-[10px] font-bold uppercase mb-1 ml-1">
+//             Price
+//           </Text>
+//           <View className="flex-row items-center">
+//             <Text className="text-slate-400 text-xs mr-1">₹</Text>
+//             <TextInput
+//               value={item.unitPrice.toString()}
+//               keyboardType="numeric"
+//               className="text-slate-800 font-bold text-base p-0 min-w-[40px]"
+//               onChangeText={text => updateItemPrice(item.id, text)}
+//             />
+//           </View>
+//         </View>
+
+//         <View className="flex-1 bg-slate-50 rounded-xl p-2 border border-slate-100 items-center">
+//           <Text className="text-slate-400 text-[10px] font-bold uppercase mb-1">
+//             Qty
+//           </Text>
+//           <View className="flex-row items-center">
+//             <TouchableOpacity
+//               onPress={() => updateItemQuantity(item.id, -1)}
+//               className="bg-white rounded p-1 shadow-sm"
+//             >
+//               <Text className="text-slate-600 font-bold">-</Text>
+//             </TouchableOpacity>
+//             <Text className="mx-3 text-slate-800 font-bold text-base">
+//               {item.quantity}
+//             </Text>
+//             <TouchableOpacity
+//               onPress={() => updateItemQuantity(item.id, 1)}
+//               className="bg-white rounded p-1 shadow-sm"
+//             >
+//               <Text className="text-slate-600 font-bold">+</Text>
+//             </TouchableOpacity>
+//           </View>
+//         </View>
+
+//         <View className="flex-1 bg-green-50 rounded-xl p-2 border border-green-100 justify-center items-end pr-3">
+//           <Text className="text-green-600 text-[10px] font-bold uppercase mb-0.5">
+//             Total
+//           </Text>
+//           <Text className="text-green-700 font-black text-lg">
+//             ₹{item.amount.toFixed(0)}
+//           </Text>
+//         </View>
+//       </View>
+//     </View>
+//   );
+
+//   const ItemsSection = () => (
+//     <View className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+//       <View className="flex-row justify-between items-center mb-4">
+//         <SectionHeader icon={ShoppingCart} title="Items Cart" color="#F59E0B" />
+//         <TouchableOpacity
+//           onPress={addNewItem}
+//           className="bg-indigo-50 px-3 py-1.5 rounded-full flex-row items-center border border-indigo-100"
+//         >
+//           <Plus size={14} color="#4F46E5" />
+//           <Text className="text-indigo-600 text-xs font-bold ml-1">
+//             ADD ITEM
+//           </Text>
+//         </TouchableOpacity>
+//       </View>
+
+//       {billItems.map((item, index) => (
+//         <BillItemCard key={item.id} item={item} index={index} />
+//       ))}
+//     </View>
+//   );
+
+//   const ProductSearchModal = () => (
+//     <Modal
+//       visible={showProductModal !== null}
+//       transparent
+//       animationType="slide"
+//       onRequestClose={() => setShowProductModal(null)}
+//     >
+//       <View className="flex-1 bg-slate-900/60 justify-end">
+//         <TouchableOpacity
+//           className="flex-1"
+//           onPress={() => setShowProductModal(null)}
+//         />
+
+//         <View className="bg-slate-50 h-[75%] rounded-t-[32px] overflow-hidden">
+//           <View className="w-full items-center pt-3 pb-2 bg-white">
+//             <View className="w-12 h-1.5 bg-slate-300 rounded-full" />
+//           </View>
+
+//           <View className="px-5 pb-4 bg-white border-b border-slate-100">
+//             <Text className="text-xl font-black text-slate-800 mb-4">
+//               Select Product
+//             </Text>
+//             <View className="flex-row items-center bg-slate-100 rounded-xl px-4 h-12">
+//               <Search color="#94A3B8" size={20} />
+//               <TextInput
+//                 className="flex-1 ml-3 text-slate-800 font-medium text-base"
+//                 placeholder="Search products..."
+//                 placeholderTextColor="#94A3B8"
+//                 value={searchQuery}
+//                 onChangeText={setSearchQuery}
+//                 autoFocus
+//               />
+//               {searchQuery.length > 0 && (
+//                 <TouchableOpacity onPress={() => setSearchQuery('')}>
+//                   <X size={18} color="#94A3B8" />
+//                 </TouchableOpacity>
+//               )}
+//             </View>
+//           </View>
+
+//           <ScrollView
+//             className="flex-1 px-5 pt-4"
+//             contentContainerStyle={{ paddingBottom: 40 }}
+//           >
+//             {filteredProducts.length > 0 ? (
+//               filteredProducts.map(item => (
+//                 <TouchableOpacity
+//                   key={item.id}
+//                   onPress={() => selectProduct(showProductModal!, item)}
+//                   className="bg-white p-4 rounded-2xl mb-3 border border-slate-100 shadow-sm flex-row justify-between items-center active:scale-[0.98]"
+//                 >
+//                   <View className="flex-1">
+//                     <Text className="text-slate-800 font-bold text-base mb-0.5">
+//                       {item.name}
+//                     </Text>
+//                     <Text className="text-slate-500 text-sm mb-2">
+//                       {item.name_english}
+//                     </Text>
+//                     {item.weight && (
+//                       <View className="bg-slate-100 px-2 py-0.5 rounded self-start">
+//                         <Text className="text-slate-600 text-xs font-bold">
+//                           {item.weight}
+//                         </Text>
+//                       </View>
+//                     )}
+//                   </View>
+//                   <View className="items-end">
+//                     <Text className="text-lg font-black text-slate-800">
+//                       ₹{item.price}
+//                     </Text>
+//                     <View className="bg-indigo-600 rounded-full p-1 mt-1">
+//                       <Plus size={16} color="white" />
+//                     </View>
+//                   </View>
+//                 </TouchableOpacity>
+//               ))
+//             ) : (
+//               <View className="items-center py-10 opacity-50">
+//                 <Package size={48} color="#94A3B8" />
+//                 <Text className="text-slate-500 font-medium mt-4">
+//                   No products found
+//                 </Text>
+//               </View>
+//             )}
+//           </ScrollView>
+//         </View>
+//       </View>
+//     </Modal>
+//   );
+
+//   const StickyFooter = () => (
+//     <View className="absolute bottom-0 w-full bg-white border-t border-slate-200 pb-6 pt-4 px-5 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] rounded-t-3xl">
+//       <View className="flex-row justify-between items-end mb-4">
+//         <View>
+//           <Text className="text-slate-400 text-xs font-bold uppercase tracking-wide mb-1">
+//             Total Amount
+//           </Text>
+//           <Text className="text-slate-900 text-3xl font-black tracking-tight">
+//             ₹{subTotal.toFixed(2)}
+//           </Text>
+//         </View>
+//         <View className="bg-green-100 px-3 py-1 rounded-full">
+//           <Text className="text-green-700 text-xs font-bold">
+//             {billItems.length} Items
+//           </Text>
+//         </View>
+//       </View>
+
+//       <TouchableOpacity
+//         onPress={handleSaveBill}
+//         disabled={isSaving}
+//         className="bg-indigo-600 w-full py-4 rounded-2xl flex-row items-center justify-center shadow-lg shadow-indigo-200 active:bg-indigo-700"
+//       >
+//         {isSaving ? (
+//           <ActivityIndicator color="white" />
+//         ) : (
+//           <>
+//             <Text className="text-white font-bold text-lg mr-2">
+//               Generate Invoice
+//             </Text>
+//             <FileText color="white" size={20} strokeWidth={2.5} />
+//           </>
+//         )}
+//       </TouchableOpacity>
+//     </View>
+//   );
+
+//   // Loading State
+//   if (isLoading) {
+//     return (
+//       <View className="flex-1 bg-white justify-center items-center">
+//         <ActivityIndicator size="large" color="#4F46E5" />
+//         <Text className="text-slate-500 mt-4 font-medium tracking-wide">
+//           Preparing Dashboard...
+//         </Text>
+//       </View>
+//     );
+//   }
+
+//   // Main Render
+//   return (
+//     <SafeAreaView className="flex-1 bg-slate-50">
+//       <StatusBar barStyle="dark-content" backgroundColor="#0F172A" />
+//       <ToastNotification />
+
+//       {/* Header */}
+//       <View className="bg-blue-900 pb-6 pt-2 px-6 shadow-lg z-10">
+//         <View className="flex-row justify-between items-start">
+//           <View>
+//             <Text className="text-slate-400 text-xs font-bold tracking-widest uppercase mb-1">
+//               New Invoice
+//             </Text>
+//             <Text className="text-white text-2xl font-black tracking-tight">
+//               Create Bill
+//             </Text>
+//             <Text className="text-white text-sm font-medium mt-1">
+//               {COMPANY_DETAILS.name}
+//             </Text>
+//           </View>
+//           <View className="items-end justify-center my-auto">
+//             <View className="bg-indigo-600/20 px-3 py-1 rounded-full border border-indigo-500/30 mb-1 my-auto">
+//               <Text className="text-indigo-300 text-lg font-bold">
+//                 {invoiceNo}
+//               </Text>
+//             </View>
+//           </View>
+//         </View>
+//       </View>
+
+//       <KeyboardAvoidingView
+//         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+//         className="flex-1"
+//       >
+//         <ScrollView
+//           className="flex-1"
+//           showsVerticalScrollIndicator={false}
+//           contentContainerStyle={{ paddingBottom: 140 }}
+//         >
+//           <Animated.View
+//             style={{
+//               opacity: fadeAnim,
+//               transform: [{ translateY: slideUpAnim }],
+//             }}
+//             className="px-5 pt-6 space-y-6"
+//           >
+//             <CustomerDetailsSection />
+//             <ItemsSection />
+//             <View className="h-6" />
+//           </Animated.View>
+//         </ScrollView>
+//       </KeyboardAvoidingView>
+
+//       <StickyFooter />
+//       <ProductSearchModal />
+//     </SafeAreaView>
+//   );
+// };
+
+// export default CreateBillScreen;
+
+
+// import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+// import {
+//   View,
+//   Text,
+//   TouchableOpacity,
+//   StatusBar,
+//   ScrollView,
+//   TextInput,
+//   ActivityIndicator,
+//   Animated,
+//   Modal,
+//   Keyboard,
+//   Platform,
+//   KeyboardAvoidingView,
+// } from 'react-native';
+// import {
+//   Plus,
+//   Trash2,
+//   User,
+//   Package,
+//   FileText,
+//   Search,
+//   X,
+//   CheckCircle,
+//   MapPin,
+//   ChevronDown,
+//   Briefcase,
+//   Smartphone,
+//   ShoppingCart,
+// } from 'lucide-react-native';
+// import { SafeAreaView } from 'react-native-safe-area-context';
+// import { useNavigation } from '@react-navigation/native';
+// import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+// // Services
+// import { getProduct } from '../../services/Apis/GetItem.api';
+// import { saveBill } from '../../services/Apis/saveBill';
+// import { getNextInvoice } from '../../services/Apis/getNextInvoice';
+
+// // Components
+// import ToastNotification from '../../components/toastModel/ToastNotification';
+// import { Toast } from '../../components/toastModel/ToastModel';
+
+// // Types
+// import { RootStackParamList } from '../../types_interface/navigation.type';
+// import { searchCustomers } from './APi/searchCustomer';
+
+// type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
+
+// interface AddProduct {
+//   id: number;
+//   name: string;
+//   name_english: string;
+//   weight?: string;
+//   price: number;
+//   stock?: number;
+// }
+
+// interface CustomerDetails {
+//   buyer_name: string;
+//   phone: string;
+//   email: string;
+//   address: string;
+// }
+
+// interface BillItem {
+//   id: string;
+//   itemId: number;
+//   itemName: string;
+//   englishItemName: string;
+//   quantity: number;
+//   unitPrice: number;
+//   amount: number;
+//   weight: string;
+// }
+
+// // Constants
+// const COMPANY_DETAILS = {
+//   name: 'NETHRA FOOD PRODUCTS',
+//   address: '33, Bharathidasen Street, Mutharayarpalayam, Puducherry - 605003',
+//   phone: '9688537216',
+//   gst: '33AAVFN1234A1Z5',
+// };
+
+// const BANK_DETAILS = {
+//   bankName: 'BANK OF BARODA',
+//   accountNo: '69480100012900',
+//   ifscCode: 'BARB0VJRAJI',
+//   branch: 'Pondicherry',
+// };
+
+// const INITIAL_BILL_ITEM: BillItem = {
+//   id: '1',
+//   itemId: 0,
+//   itemName: '',
+//   englishItemName: '',
+//   quantity: 1,
+//   unitPrice: 0,
+//   amount: 0,
+//   weight: '',
+// };
+
+// const INITIAL_CUSTOMER: CustomerDetails = {
+//   buyer_name: '',
+//   phone: '',
+//   email: '',
+//   address: '',
+// };
+
+// // Enhanced Debounce Utility
+// const createDebounce = () => {
+//   let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  
+//   return (func: Function, delay: number) => {
+//     return (...args: any[]) => {
+//       if (timeoutId) clearTimeout(timeoutId);
+//       timeoutId = setTimeout(() => func(...args), delay);
+//     };
+//   };
+// };
+
+// const CreateBillScreen = () => {
+//   const navigation = useNavigation<NavigationProps>();
+
+//   // State Management
+//   const [invoiceNo, setInvoiceNo] = useState('');
+//   const [availableProducts, setAvailableProducts] = useState<AddProduct[]>([]);
+//   const [isLoading, setIsLoading] = useState(true);
+//   const [isSaving, setIsSaving] = useState(false);
+//   const [searchQuery, setSearchQuery] = useState('');
+//   const [showProductModal, setShowProductModal] = useState<string | null>(null);
+//   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  
+//   // Customer Auto-Suggestion States
+//   const [customer, setCustomer] = useState<CustomerDetails>(INITIAL_CUSTOMER);
+//   const [customerSuggestions, setCustomerSuggestions] = useState<CustomerDetails[]>([]);
+//   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
+//   const [isSearchingCustomers, setIsSearchingCustomers] = useState(false);
+//   const [hasManuallySelected, setHasManuallySelected] = useState(false);
+//   const [billItems, setBillItems] = useState<BillItem[]>([INITIAL_BILL_ITEM]);
+
+//   // Animation Refs
+//   const fadeAnim = useRef(new Animated.Value(0)).current;
+//   const slideUpAnim = useRef(new Animated.Value(100)).current;
+  
+//   // Debounce ref
+//   const debounceInstance = useRef(createDebounce()).current;
+
+//   // Enhanced Customer Search with Better Debouncing
+//   const performCustomerSearch = useCallback(async (searchText: string) => {
+//     if (searchText.length < 3) {
+//       setCustomerSuggestions([]);
+//       setShowCustomerSuggestions(false);
+//       setIsSearchingCustomers(false);
+//       return;
+//     }
+
+//     try {
+//       const results = await searchCustomers(searchText);
+//       const transformedResults = (results || []).map(result => ({
+//         buyer_name: result.buyer_name || '',
+//         phone: result.phone || '',
+//         email: result.email || '',
+//         address: result.address || '',
+//       }));
+      
+//       setCustomerSuggestions(transformedResults);
+//       setShowCustomerSuggestions(transformedResults.length > 0);
+//     } catch (error) {
+//       console.error('Customer search error:', error);
+//       setCustomerSuggestions([]);
+//       setShowCustomerSuggestions(false);
+//     } finally {
+//       setIsSearchingCustomers(false);
+//     }
+//   }, []);
+
+//   // Debounced search function
+//   const debouncedSearchCustomers = useCallback(
+//     debounceInstance(performCustomerSearch, 800),
+//     [performCustomerSearch]
+//   );
+
+//   const handleNameFocus = useCallback(() => {
+//     if (!hasManuallySelected && customerSuggestions.length > 0 && customer.buyer_name.length >= 3) {
+//       setShowCustomerSuggestions(true);
+//     }
+//   }, [hasManuallySelected, customerSuggestions.length, customer.buyer_name]);
+
+//   const handleNameBlur = useCallback(() => {
+//     setTimeout(() => {
+//       setShowCustomerSuggestions(false);
+//     }, 200);
+//   }, []);
+
+//   // Effects
+//   useEffect(() => {
+//     Animated.parallel([
+//       Animated.timing(fadeAnim, {
+//         toValue: 1,
+//         duration: 800,
+//         useNativeDriver: true,
+//       }),
+//       Animated.timing(slideUpAnim, {
+//         toValue: 0,
+//         duration: 600,
+//         useNativeDriver: true,
+//       }),
+//     ]).start();
+//   }, []);
+
+//   useEffect(() => {
+//     loadInitialData();
+//   }, []);
+
+//   useEffect(() => {
+//     const keyboardDidHide = Keyboard.addListener('keyboardDidHide', () => {
+//       setShowCustomerSuggestions(false);
+//     });
+
+//     return () => {
+//       keyboardDidHide.remove();
+//     };
+//   }, []);
+
+//   // Data Loading
+//   const loadInitialData = async () => {
+//     setIsLoading(true);
+//     try {
+//       const [invoice, products] = await Promise.all([
+//         getNextInvoice(),
+//         getProduct(),
+//       ]);
+
+//       if (invoice) setInvoiceNo(invoice);
+//       setAvailableProducts(products || []);
+//     } catch (err) {
+//       Toast.error('Failed to load initial data');
+//       console.error(err);
+//     } finally {
+//       setIsLoading(false);
+//     }
+//   };
+
+//   // Enhanced Name Change Handler - INSTANT UI UPDATE
+//   const handleNameChange = useCallback((text: string) => {
+//     // ✅ IMMEDIATE UPDATE - No lag for typing
+//     setCustomer(prev => ({ ...prev, buyer_name: text }));
+//     setFieldErrors(prev => ({ ...prev, customerName: '' }));
+    
+//     // Reset manual selection flag
+//     if (hasManuallySelected) {
+//       setHasManuallySelected(false);
+//     }
+    
+//     // Clear suggestions if less than 3 characters
+//     if (text.length < 3) {
+//       setShowCustomerSuggestions(false);
+//       setCustomerSuggestions([]);
+//       setIsSearchingCustomers(false);
+//       return;
+//     }
+    
+//     // Show loading indicator immediately (optimistic UI)
+//     setIsSearchingCustomers(true);
+    
+//     // Debounce ONLY the API call, not the UI update
+//     debouncedSearchCustomers(text);
+//   }, [hasManuallySelected, debouncedSearchCustomers]);
+
+//   const handlePhoneChange = useCallback((text: string) => {
+//     const digitsOnly = text.replace(/\D/g, '');
+//     setCustomer(prev => ({ ...prev, phone: digitsOnly }));
+//     setFieldErrors(prev => ({ ...prev, customerPhone: '' }));
+//   }, []);
+
+//   const handleAddressChange = useCallback((text: string) => {
+//     setCustomer(prev => ({ ...prev, address: text }));
+//   }, []);
+
+//   const filteredProducts = useMemo(() => {
+//     if (!searchQuery.trim()) return availableProducts;
+//     const query = searchQuery.toLowerCase();
+//     return availableProducts.filter(
+//       p =>
+//         p.name.toLowerCase().includes(query) ||
+//         p.name_english.toLowerCase().includes(query),
+//     );
+//   }, [searchQuery, availableProducts]);
+
+//   const subTotal = useMemo(
+//     () => billItems.reduce((sum, item) => sum + item.amount, 0),
+//     [billItems],
+//   );
+
+//   const selectCustomerFromSuggestion = useCallback((selectedCustomer: CustomerDetails) => {
+//     setCustomer({
+//       buyer_name: selectedCustomer.buyer_name,
+//       phone: selectedCustomer.phone,
+//       email: selectedCustomer.email || '',
+//       address: selectedCustomer.address,
+//     });
+//     setShowCustomerSuggestions(false);
+//     setCustomerSuggestions([]);
+//     setHasManuallySelected(true);
+//     setIsSearchingCustomers(false);
+//     Keyboard.dismiss();
+//   }, []);
+
+//   // Bill Item Handlers
+//   const addNewItem = useCallback(() => {
+//     const newItem: BillItem = {
+//       id: Date.now().toString(),
+//       itemId: 0,
+//       itemName: '',
+//       englishItemName: '',
+//       quantity: 1,
+//       unitPrice: 0,
+//       amount: 0,
+//       weight: '',
+//     };
+//     setBillItems(prev => [...prev, newItem]);
+//   }, []);
+
+//   const removeItem = useCallback((id: string) => {
+//     setBillItems(prev => (prev.length > 1 ? prev.filter(item => item.id !== id) : prev));
+//   }, []);
+
+//   const selectProduct = useCallback((itemId: string, product: AddProduct) => {
+//     setBillItems(prevItems =>
+//       prevItems.map(item => {
+//         if (item.id !== itemId) return item;
+//         return {
+//           ...item,
+//           itemId: product.id,
+//           itemName: product.name,
+//           englishItemName: product.name_english,
+//           weight: product.weight ?? '',
+//           unitPrice: product.price,
+//           amount: item.quantity * product.price,
+//         };
+//       }),
+//     );
+//     setShowProductModal(null);
+//     setSearchQuery('');
+//   }, []);
+
+//   const updateItemQuantity = useCallback((itemId: string, delta: number) => {
+//     setBillItems(prev =>
+//       prev.map(item => {
+//         if (item.id !== itemId) return item;
+//         const newQty = Math.max(1, item.quantity + delta);
+//         return {
+//           ...item,
+//           quantity: newQty,
+//           amount: newQty * item.unitPrice,
+//         };
+//       }),
+//     );
+//   }, []);
+
+//   const updateItemPrice = useCallback((itemId: string, priceText: string) => {
+//     const price = parseFloat(priceText) || 0;
+//     setBillItems(prev =>
+//       prev.map(item =>
+//         item.id === itemId
+//           ? {
+//               ...item,
+//               unitPrice: price,
+//               amount: item.quantity * price,
+//             }
+//           : item,
+//       ),
+//     );
+//   }, []);
+
+//   // Validation
+//   const validateBillData = useCallback((): boolean => {
+//     const errors: Record<string, string> = {};
+    
+//     if (!customer.buyer_name.trim()) {
+//       errors.customerName = 'Customer name is required';
+//     }
+    
+//     if (customer.phone && !/^\d{10}$/.test(customer.phone)) {
+//       errors.customerPhone = 'Phone must be 10 digits';
+//     }
+
+//     billItems.forEach((item, idx) => {
+//       if (item.itemId === 0) {
+//         errors[`item_${idx}`] = 'Please select a product';
+//       }
+//     });
+
+//     if (subTotal <= 0) {
+//       errors.total = 'Total amount cannot be zero';
+//     }
+
+//     setFieldErrors(errors);
+//     return Object.keys(errors).length === 0;
+//   }, [customer, billItems, subTotal]);
+
+//   // Save Bill
+//   const transformBillForBackend = useCallback(() => {
+//     return {
+//       buyer: {
+//         buyer_name: customer.buyer_name.trim(),
+//         phone: customer.phone.trim(),
+//         address: customer.address.trim(),
+//       },
+//       invoice_date: new Date().toISOString().split('T')[0],
+//       subtotal: subTotal,
+//       total: subTotal,
+//       bill_items: billItems.map(item => ({
+//         item_id: item.itemId,
+//         qty: item.quantity,
+//         price: item.unitPrice,
+//         amount: item.amount,
+//         item_name: item.itemName,
+//       })),
+//     };
+//   }, [customer, subTotal, billItems]);
+
+//   const handleSaveBill = async () => {
+//     const isValid = validateBillData();
+
+//     if (!isValid) {
+//       const allErrors = Object.values(fieldErrors).filter(msg => msg).join('\n');
+//       Toast.error(allErrors || 'Please check the form for errors.');
+//       return;
+//     }
+
+//     setIsSaving(true);
+//     Keyboard.dismiss();
+
+//     try {
+//       const backendPayload = transformBillForBackend();
+//       await saveBill(backendPayload);
+      
+//       Toast.success('Bill generated successfully!');
+
+//       setTimeout(() => {
+//         setIsSaving(false);
+//         navigation.navigate('HomeScreen');
+//       }, 1000);
+//     } catch (error) {
+//       console.error('Save bill error:', error);
+//       Toast.error('Failed to save bill');
+//       setIsSaving(false);
+//     }
+//   };
+
+//   // UI Components
+//   const SectionHeader = ({ icon: Icon, title, color = '#4F46E5' }: any) => (
+//     <View className="flex-row items-center mb-4">
+//       <View className="p-2 rounded-lg bg-indigo-50 mr-3">
+//         <Icon color={color} size={20} strokeWidth={2.5} />
+//       </View>
+//       <Text className="text-slate-800 font-bold text-lg tracking-tight">
+//         {title}
+//       </Text>
+//     </View>
+//   );
+
+//   const CustomerSuggestionsDropdown = () => (
+//     showCustomerSuggestions && customerSuggestions.length > 0 && (
+//       <View className="mt-2 bg-white border border-indigo-200 rounded-xl shadow-2xl max-h-64 overflow-hidden">
+//         <View className="px-3 py-2 bg-indigo-50 border-b border-indigo-100">
+//           <Text className="text-indigo-600 text-xs font-bold uppercase tracking-wide">
+//             📋 Previous Customers ({customerSuggestions.length})
+//           </Text>
+//         </View>
+//         <ScrollView 
+//           nestedScrollEnabled 
+//           keyboardShouldPersistTaps="handled"
+//           showsVerticalScrollIndicator={false}
+//         >
+//           {customerSuggestions.map((suggestion, index) => (
+//             <TouchableOpacity
+//               key={`${suggestion.buyer_name}-${index}`}
+//               onPress={() => selectCustomerFromSuggestion(suggestion)}
+//               className="p-4 border-b border-slate-100 active:bg-indigo-50"
+//               activeOpacity={0.7}
+//             >
+//               <View className="flex-row items-start justify-between">
+//                 <View className="flex-1 mr-3">
+//                   <Text className="text-slate-900 font-bold text-base mb-1.5">
+//                     {suggestion.buyer_name}
+//                   </Text>
+//                   {suggestion.phone && (
+//                     <View className="flex-row items-center mb-1">
+//                       <View className="bg-green-100 rounded-full px-2.5 py-1">
+//                         <Text className="text-green-700 text-xs font-bold">
+//                           📱 {suggestion.phone}
+//                         </Text>
+//                       </View>
+//                     </View>
+//                   )}
+//                   {suggestion.address && (
+//                     <Text className="text-slate-500 text-sm mt-1" numberOfLines={2}>
+//                       📍 {suggestion.address}
+//                     </Text>
+//                   )}
+//                 </View>
+//                 <View className="bg-indigo-600 rounded-full p-2 mt-1">
+//                   <CheckCircle size={18} color="white" strokeWidth={2.5} />
+//                 </View>
+//               </View>
+//             </TouchableOpacity>
+//           ))}
+//         </ScrollView>
+//       </View>
+//     )
+//   );
+
+//   const CustomerDetailsSection = () => (
+//     <View className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+//       <SectionHeader icon={User} title="Customer Details" color="#4F46E5" />
+
+//       {/* Customer Name with Auto-Suggestion */}
+//       <View className="mb-4">
+//         <View className={`flex-row items-center bg-slate-50 border ${
+//           fieldErrors.customerName ? 'border-red-300' : 'border-slate-200'
+//         } rounded-xl px-4 py-3`}>
+//           <Briefcase color="#64748B" size={20} />
+//           <TextInput
+//             className="flex-1 ml-3 text-slate-800 font-medium text-base"
+//             placeholder="Customer / Business Name *"
+//             placeholderTextColor="#94A3B8"
+//             value={customer.buyer_name}
+//             onChangeText={handleNameChange}
+//             onFocus={handleNameFocus}
+//             onBlur={handleNameBlur}
+//             autoCapitalize="words"
+//             autoCorrect={false}
+//           />
+//           {isSearchingCustomers && (
+//             <View className="ml-2">
+//               <ActivityIndicator size="small" color="#4F46E5" />
+//             </View>
+//           )}
+//         </View>
+        
+//         {/* Helper Text */}
+//         {!hasManuallySelected && customer.buyer_name.length > 0 && customer.buyer_name.length < 3 && (
+//           <Text className="text-slate-400 text-xs mt-1.5 ml-1">
+//             💡 Type at least 3 characters to search previous customers
+//           </Text>
+//         )}
+        
+//         {/* Error Message */}
+//         {fieldErrors.customerName && (
+//           <Text className="text-red-500 text-xs mt-1.5 ml-1 font-medium">
+//             ⚠️ {fieldErrors.customerName}
+//           </Text>
+//         )}
+        
+//         {/* Suggestions Dropdown */}
+//         <CustomerSuggestionsDropdown />
+//       </View>
+
+//       {/* Phone */}
+//       <View className="mb-4">
+//         <View className={`flex-row items-center bg-slate-50 border ${
+//           fieldErrors.customerPhone ? 'border-red-300' : 'border-slate-200'
+//         } rounded-xl px-4 py-3`}>
+//           <Smartphone color="#64748B" size={20} />
+//           <TextInput
+//             className="flex-1 ml-3 text-slate-800 font-medium text-base"
+//             placeholder="Phone Number"
+//             placeholderTextColor="#94A3B8"
+//             keyboardType="number-pad"
+//             maxLength={10}
+//             value={customer.phone}
+//             onChangeText={handlePhoneChange}
+//           />
+//         </View>
+//         {fieldErrors.customerPhone && (
+//           <Text className="text-red-500 text-xs mt-1.5 ml-1 font-medium">
+//             ⚠️ {fieldErrors.customerPhone}
+//           </Text>
+//         )}
+//       </View>
+
+//       {/* Address */}
+//       <View className="flex-row items-start bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+//         <MapPin color="#64748B" size={20} style={{ marginTop: 6 }} />
+//         <TextInput
+//           className="flex-1 ml-3 text-slate-800 font-medium text-base"
+//           placeholder="Delivery Address"
+//           placeholderTextColor="#94A3B8"
+//           multiline
+//           numberOfLines={3}
+//           value={customer.address}
+//           onChangeText={handleAddressChange}
+//           textAlignVertical="top"
+//         />
+//       </View>
+//     </View>
+//   );
+
+//   const BillItemCard = ({ item, index }: { item: BillItem; index: number }) => (
+//     <View className="mb-4 pb-4 border-b border-slate-100 last:border-0 last:mb-0 last:pb-0">
+//       <View className="flex-row justify-between mb-2">
+//         <Text className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+//           Item #{index + 1}
+//         </Text>
+//         {billItems.length > 1 && (
+//           <TouchableOpacity onPress={() => removeItem(item.id)}>
+//             <Trash2 size={16} color="#EF4444" />
+//           </TouchableOpacity>
+//         )}
+//       </View>
+
+//       <TouchableOpacity
+//         onPress={() => setShowProductModal(item.id)}
+//         className={`flex-row items-center bg-slate-50 border ${
+//           fieldErrors[`item_${index}`] ? 'border-red-300' : 'border-slate-200'
+//         } rounded-xl p-3 mb-3`}
+//       >
+//         <View
+//           className={`w-10 h-10 rounded-lg items-center justify-center mr-3 ${
+//             item.itemId ? 'bg-indigo-100' : 'bg-slate-200'
+//           }`}
+//         >
+//           <Package size={20} color={item.itemId ? '#4F46E5' : '#94A3B8'} />
+//         </View>
+//         <View className="flex-1">
+//           {item.itemName ? (
+//             <>
+//               <Text className="text-slate-800 font-bold text-base">
+//                 {item.itemName}
+//               </Text>
+//               <Text className="text-slate-500 text-xs">
+//                 {item.englishItemName} {item.weight ? `• ${item.weight}` : ''}
+//               </Text>
+//             </>
+//           ) : (
+//             <Text className="text-slate-400 font-medium italic">
+//               Tap to select product...
+//             </Text>
+//           )}
+//         </View>
+//         <ChevronDown size={16} color="#94A3B8" />
+//       </TouchableOpacity>
+
+//       {/* Price, Quantity, Total */}
+//       <View className="flex-row gap-3">
+//         <View className="flex-1 bg-slate-50 rounded-xl p-2 border border-slate-100">
+//           <Text className="text-slate-400 text-[10px] font-bold uppercase mb-1 ml-1">
+//             Price
+//           </Text>
+//           <View className="flex-row items-center">
+//             <Text className="text-slate-400 text-xs mr-1">₹</Text>
+//             <TextInput
+//               value={item.unitPrice.toString()}
+//               keyboardType="numeric"
+//               className="text-slate-800 font-bold text-base p-0 min-w-[40px]"
+//               onChangeText={text => updateItemPrice(item.id, text)}
+//             />
+//           </View>
+//         </View>
+
+//         <View className="flex-1 bg-slate-50 rounded-xl p-2 border border-slate-100 items-center">
+//           <Text className="text-slate-400 text-[10px] font-bold uppercase mb-1">
+//             Qty
+//           </Text>
+//           <View className="flex-row items-center">
+//             <TouchableOpacity
+//               onPress={() => updateItemQuantity(item.id, -1)}
+//               className="bg-white rounded p-1 shadow-sm"
+//             >
+//               <Text className="text-slate-600 font-bold">-</Text>
+//             </TouchableOpacity>
+//             <Text className="mx-3 text-slate-800 font-bold text-base">
+//               {item.quantity}
+//             </Text>
+//             <TouchableOpacity
+//               onPress={() => updateItemQuantity(item.id, 1)}
+//               className="bg-white rounded p-1 shadow-sm"
+//             >
+//               <Text className="text-slate-600 font-bold">+</Text>
+//             </TouchableOpacity>
+//           </View>
+//         </View>
+
+//         <View className="flex-1 bg-green-50 rounded-xl p-2 border border-green-100 justify-center items-end pr-3">
+//           <Text className="text-green-600 text-[10px] font-bold uppercase mb-0.5">
+//             Total
+//           </Text>
+//           <Text className="text-green-700 font-black text-lg">
+//             ₹{item.amount.toFixed(0)}
+//           </Text>
+//         </View>
+//       </View>
+//     </View>
+//   );
+
+//   const ItemsSection = () => (
+//     <View className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+//       <View className="flex-row justify-between items-center mb-4">
+//         <SectionHeader icon={ShoppingCart} title="Items Cart" color="#F59E0B" />
+//         <TouchableOpacity
+//           onPress={addNewItem}
+//           className="bg-indigo-50 px-3 py-1.5 rounded-full flex-row items-center border border-indigo-100"
+//         >
+//           <Plus size={14} color="#4F46E5" />
+//           <Text className="text-indigo-600 text-xs font-bold ml-1">
+//             ADD ITEM
+//           </Text>
+//         </TouchableOpacity>
+//       </View>
+
+//       {billItems.map((item, index) => (
+//         <BillItemCard key={item.id} item={item} index={index} />
+//       ))}
+//     </View>
+//   );
+
+//   const ProductSearchModal = () => (
+//     <Modal
+//       visible={showProductModal !== null}
+//       transparent
+//       animationType="slide"
+//       onRequestClose={() => setShowProductModal(null)}
+//     >
+//       <View className="flex-1 bg-slate-900/60 justify-end">
+//         <TouchableOpacity
+//           className="flex-1"
+//           onPress={() => setShowProductModal(null)}
+//         />
+
+//         <View className="bg-slate-50 h-[75%] rounded-t-[32px] overflow-hidden">
+//           <View className="w-full items-center pt-3 pb-2 bg-white">
+//             <View className="w-12 h-1.5 bg-slate-300 rounded-full" />
+//           </View>
+
+//           <View className="px-5 pb-4 bg-white border-b border-slate-100">
+//             <Text className="text-xl font-black text-slate-800 mb-4">
+//               Select Product
+//             </Text>
+//             <View className="flex-row items-center bg-slate-100 rounded-xl px-4 h-12">
+//               <Search color="#94A3B8" size={20} />
+//               <TextInput
+//                 className="flex-1 ml-3 text-slate-800 font-medium text-base"
+//                 placeholder="Search products..."
+//                 placeholderTextColor="#94A3B8"
+//                 value={searchQuery}
+//                 onChangeText={setSearchQuery}
+//                 autoFocus
+//               />
+//               {searchQuery.length > 0 && (
+//                 <TouchableOpacity onPress={() => setSearchQuery('')}>
+//                   <X size={18} color="#94A3B8" />
+//                 </TouchableOpacity>
+//               )}
+//             </View>
+//           </View>
+
+//           <ScrollView
+//             className="flex-1 px-5 pt-4"
+//             contentContainerStyle={{ paddingBottom: 40 }}
+//           >
+//             {filteredProducts.length > 0 ? (
+//               filteredProducts.map(item => (
+//                 <TouchableOpacity
+//                   key={item.id}
+//                   onPress={() => selectProduct(showProductModal!, item)}
+//                   className="bg-white p-4 rounded-2xl mb-3 border border-slate-100 shadow-sm flex-row justify-between items-center active:scale-[0.98]"
+//                 >
+//                   <View className="flex-1">
+//                     <Text className="text-slate-800 font-bold text-base mb-0.5">
+//                       {item.name}
+//                     </Text>
+//                     <Text className="text-slate-500 text-sm mb-2">
+//                       {item.name_english}
+//                     </Text>
+//                     {item.weight && (
+//                       <View className="bg-slate-100 px-2 py-0.5 rounded self-start">
+//                         <Text className="text-slate-600 text-xs font-bold">
+//                           {item.weight}
+//                         </Text>
+//                       </View>
+//                     )}
+//                   </View>
+//                   <View className="items-end">
+//                     <Text className="text-lg font-black text-slate-800">
+//                       ₹{item.price}
+//                     </Text>
+//                     <View className="bg-indigo-600 rounded-full p-1 mt-1">
+//                       <Plus size={16} color="white" />
+//                     </View>
+//                   </View>
+//                 </TouchableOpacity>
+//               ))
+//             ) : (
+//               <View className="items-center py-10 opacity-50">
+//                 <Package size={48} color="#94A3B8" />
+//                 <Text className="text-slate-500 font-medium mt-4">
+//                   No products found
+//                 </Text>
+//               </View>
+//             )}
+//           </ScrollView>
+//         </View>
+//       </View>
+//     </Modal>
+//   );
+
+//   const StickyFooter = () => (
+//     <View className="absolute bottom-0 w-full bg-white border-t border-slate-200 pb-6 pt-4 px-5 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] rounded-t-3xl">
+//       <View className="flex-row justify-between items-end mb-4">
+//         <View>
+//           <Text className="text-slate-400 text-xs font-bold uppercase tracking-wide mb-1">
+//             Total Amount
+//           </Text>
+//           <Text className="text-slate-900 text-3xl font-black tracking-tight">
+//             ₹{subTotal.toFixed(2)}
+//           </Text>
+//         </View>
+//         <View className="bg-green-100 px-3 py-1 rounded-full">
+//           <Text className="text-green-700 text-xs font-bold">
+//             {billItems.length} Items
+//           </Text>
+//         </View>
+//       </View>
+
+//       <TouchableOpacity
+//         onPress={handleSaveBill}
+//         disabled={isSaving}
+//         className="bg-indigo-600 w-full py-4 rounded-2xl flex-row items-center justify-center shadow-lg shadow-indigo-200 active:bg-indigo-700"
+//       >
+//         {isSaving ? (
+//           <ActivityIndicator color="white" />
+//         ) : (
+//           <>
+//             <Text className="text-white font-bold text-lg mr-2">
+//               Generate Invoice
+//             </Text>
+//             <FileText color="white" size={20} strokeWidth={2.5} />
+//           </>
+//         )}
+//       </TouchableOpacity>
+//     </View>
+//   );
+
+//   // Loading State
+//   if (isLoading) {
+//     return (
+//       <View className="flex-1 bg-white justify-center items-center">
+//         <ActivityIndicator size="large" color="#4F46E5" />
+//         <Text className="text-slate-500 mt-4 font-medium tracking-wide">
+//           Preparing Dashboard...
+//         </Text>
+//       </View>
+//     );
+//   }
+
+//   // Main Render
+//   return (
+//     <SafeAreaView className="flex-1 bg-slate-50">
+//       <StatusBar barStyle="dark-content" backgroundColor="#0F172A" />
+//       <ToastNotification />
+
+//       {/* Header */}
+//       <View className="bg-blue-900 pb-6 pt-2 px-6 shadow-lg z-10">
+//         <View className="flex-row justify-between items-start">
+//           <View>
+//             <Text className="text-slate-400 text-xs font-bold tracking-widest uppercase mb-1">
+//               New Invoice
+//             </Text>
+//             <Text className="text-white text-2xl font-black tracking-tight">
+//               Create Bill
+//             </Text>
+//             <Text className="text-white text-sm font-medium mt-1">
+//               {COMPANY_DETAILS.name}
+//             </Text>
+//           </View>
+//           <View className="items-end justify-center my-auto">
+//             <View className="bg-indigo-600/20 px-3 py-1 rounded-full border border-indigo-500/30 mb-1 my-auto">
+//               <Text className="text-indigo-300 text-lg font-bold">
+//                 {invoiceNo}
+//               </Text>
+//             </View>
+//           </View>
+//         </View>
+//       </View>
+
+//       <KeyboardAvoidingView
+//         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+//         className="flex-1"
+//       >
+//         <ScrollView
+//           className="flex-1"
+//           showsVerticalScrollIndicator={false}
+//           contentContainerStyle={{ paddingBottom: 140 }}
+//         >
+//           <Animated.View
+//             style={{
+//               opacity: fadeAnim,
+//               transform: [{ translateY: slideUpAnim }],
+//             }}
+//             className="px-5 pt-6 space-y-6"
+//           >
+//             <CustomerDetailsSection />
+//             <ItemsSection />
+//             <View className="h-6" />
+//           </Animated.View>
+//         </ScrollView>
+//       </KeyboardAvoidingView>
+
+//       <StickyFooter />
+//       <ProductSearchModal />
+//     </SafeAreaView>
+//   );
+// };
+
+// export default CreateBillScreen;
+
+// import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+// import {
+//   View,
+//   Text,
+//   TouchableOpacity,
+//   StatusBar,
+//   ScrollView,
+//   TextInput,
+//   ActivityIndicator,
+//   Animated,
+//   Modal,
+//   Keyboard,
+//   Platform,
+//   KeyboardAvoidingView,
+// } from 'react-native';
+// import {
+//   Plus,
+//   Trash2,
+//   User,
+//   Package,
+//   FileText,
+//   Search,
+//   X,
+//   CheckCircle,
+//   MapPin,
+//   ChevronDown,
+//   Briefcase,
+//   Smartphone,
+//   ShoppingCart,
+// } from 'lucide-react-native';
+// import { SafeAreaView } from 'react-native-safe-area-context';
+// import { useNavigation } from '@react-navigation/native';
+// import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+// // Services
+// import { getProduct } from '../../services/Apis/GetItem.api';
+// import { saveBill } from '../../services/Apis/saveBill';
+// import { getNextInvoice } from '../../services/Apis/getNextInvoice';
+// import { searchCustomers } from './APi/searchCustomer';
+
+// // Components
+// import ToastNotification from '../../components/toastModel/ToastNotification';
+// import { Toast } from '../../components/toastModel/ToastModel';
+
+// // Types
+// import { RootStackParamList } from '../../types_interface/navigation.type';
+// import BillItemCard from './sub/BillItemCard';
+// import BillItemsSection from './sub/BillItemSection';
+
+// type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
+
+// // ==================== INTERFACES ====================
+
+// interface Product {
+//   id: number;
+//   name: string;
+//   name_english: string;
+//   weight?: string;
+//   price: number;
+//   stock?: number;
+// }
+
+// interface CustomerDetails {
+//   buyer_name: string;
+//   phone: string;
+//   email: string;
+//   address: string;
+// }
+
+// interface BillItem {
+//   id: string;
+//   itemId: number;
+//   itemName: string;
+//   englishItemName: string;
+//   quantity: number;
+//   unitPrice: number;
+//   amount: number;
+//   weight: string;
+// }
+
+// interface ValidationErrors {
+//   customerName?: string;
+//   customerPhone?: string;
+//   customerAddress?: string;
+//   [key: string]: string | undefined;
+// }
+
+// // ==================== CONSTANTS ====================
+
+// const COMPANY_DETAILS = {
+//   name: 'NETHRA FOOD PRODUCTS',
+//   address: '33, Bharathidasen Street, Mutharayarpalayam, Puducherry - 605003',
+//   phone: '9688537216',
+//   gst: '33AAVFN1234A1Z5',
+// };
+
+// const INITIAL_CUSTOMER: CustomerDetails = {
+//   buyer_name: '',
+//   phone: '',
+//   email: '',
+//   address: '',
+// };
+
+// const createInitialBillItem = (): BillItem => ({
+//   id: Date.now().toString(),
+//   itemId: 0,
+//   itemName: '',
+//   englishItemName: '',
+//   quantity: 1,
+//   unitPrice: 0,
+//   amount: 0,
+//   weight: '',
+// });
+
+// // ==================== CUSTOM HOOKS ====================
+
+
+// // Debounce Hook
+// const useDebounce = () => {
+//   const timeoutRef = useRef<number | null>(null);
+
+//   const debounce = useCallback((func: Function, delay: number) => {
+//     return (...args: any[]) => {
+//       if (timeoutRef.current) clearTimeout(timeoutRef.current);
+//       timeoutRef.current = setTimeout(() => func(...args), delay) as unknown as number;
+//     };
+//   }, []);
+
+//   useEffect(() => {
+//     return () => {
+//       if (timeoutRef.current) clearTimeout(timeoutRef.current);
+//     };
+//   }, []);
+
+//   return debounce;
+// };
+
+// // Bill Form Hook
+// const useBillForm = () => {
+//   const [customer, setCustomer] = useState<CustomerDetails>(INITIAL_CUSTOMER);
+//   const [billItems, setBillItems] = useState<BillItem[]>([createInitialBillItem()]);
+//   const [errors, setErrors] = useState<ValidationErrors>({});
+
+//   const subTotal = useMemo(
+//     () => billItems.reduce((sum, item) => sum + item.amount, 0),
+//     [billItems]
+//   );
+
+//   const itemCount = billItems.length;
+
+//   const updateCustomer = useCallback((updatedCustomer: CustomerDetails) => {
+//     setCustomer(updatedCustomer);
+//     setErrors((prev) => {
+//       const newErrors = { ...prev };
+//       delete newErrors.customerName;
+//       delete newErrors.customerPhone;
+//       delete newErrors.customerAddress;
+//       return newErrors;
+//     });
+//   }, []);
+
+//   const addBillItem = useCallback(() => {
+//     setBillItems((prev) => [...prev, createInitialBillItem()]);
+//   }, []);
+
+// const removeBillItem = useCallback((id: string) => {
+//   setBillItems((prev) => {
+//     // Only allow deletion if more than 1 item exists
+//     if (prev.length <= 1) {
+//       Toast.error('At least one item is required');
+//       return prev;
+//     }
+//     return prev.filter((item) => item.id !== id);
+//   });
+// }, []);
+
+//   const updateBillItemQuantity = useCallback((id: string, delta: number) => {
+//     setBillItems((prev) =>
+//       prev.map((item) => {
+//         if (item.id !== id) return item;
+//         const newQuantity = Math.max(1, item.quantity + delta);
+//         return {
+//           ...item,
+//           quantity: newQuantity,
+//           amount: newQuantity * item.unitPrice,
+//         };
+//       })
+//     );
+//   }, []);
+
+
+//   const updateBillItemPrice = useCallback((id: string, priceText: string) => {
+//     const price = parseFloat(priceText) || 0;
+//     setBillItems((prev) =>
+//       prev.map((item) =>
+//         item.id === id
+//           ? {
+//               ...item,
+//               unitPrice: price,
+//               amount: item.quantity * price,
+//             }
+//           : item
+//       )
+//     );
+//   }, []);
+
+  
+
+//  const selectProductForItem = useCallback(
+//     (itemId: string, product: Product) => {
+//       setBillItems((prev) =>
+//         prev.map((item) => {
+//           if (item.id !== itemId) return item;
+//           return {
+//             ...item,
+//             itemId: product.id,
+//             itemName: product.name,
+//             englishItemName: product.name_english,
+//             weight: product.weight ?? '',
+//             unitPrice: product.price,
+//             amount: item.quantity * product.price,
+//           };
+//         })
+//       );
+
+//       const itemIndex = billItems.findIndex((i) => i.id === itemId);
+//       if (itemIndex !== -1) {
+//         setErrors((prev) => {
+//           const newErrors = { ...prev };
+//           delete newErrors[`item_${itemIndex}`];
+//           return newErrors;
+//         });
+//       }
+//     },
+//     [billItems]
+//   );
+
+//   const validateForm = useCallback((): boolean => {
+//     const newErrors: ValidationErrors = {};
+
+//     if (!customer.buyer_name.trim()) {
+//       newErrors.customerName = 'Customer name is required';
+//     }
+
+//     if (customer.phone && !/^\d{10}$/.test(customer.phone)) {
+//       newErrors.customerPhone = 'Phone must be 10 digits';
+//     }
+
+//     billItems.forEach((item, index) => {
+//       if (item.itemId === 0) {
+//         newErrors[`item_${index}`] = 'Please select a product';
+//       }
+//     });
+
+//     if (subTotal <= 0) {
+//       newErrors.total = 'Total amount must be greater than zero';
+//     }
+
+//     setErrors(newErrors);
+//     return Object.keys(newErrors).length === 0;
+//   }, [customer, billItems, subTotal]);
+
+//   const buildBillPayload = useCallback(() => {
+//     return {
+//       buyer: {
+//         buyer_name: customer.buyer_name.trim(),
+//         phone: customer.phone.trim(),
+//         address: customer.address.trim(),
+//       },
+//       invoice_date: new Date().toISOString().split('T')[0],
+//       subtotal: subTotal,
+//       total: subTotal,
+//       bill_items: billItems.map((item) => ({
+//         item_id: item.itemId,
+//         qty: item.quantity,
+//         price: item.unitPrice,
+//         amount: item.amount,
+//         item_name: item.itemName,
+//       })),
+//     };
+//   }, [customer, subTotal, billItems]);
+
+//   return {
+//     customer,
+//     billItems,
+//     errors,
+//     subTotal,
+//     itemCount,
+//     updateCustomer,
+//     addBillItem,
+//     removeBillItem,
+//     updateBillItemQuantity,
+//     updateBillItemPrice,
+//     selectProductForItem,
+//     validateForm,
+//     buildBillPayload,
+//   };
+// };
+
+
+// // ==================== SUB-COMPONENTS ====================
+
+// // Customer Autocomplete Component
+// const CustomerAutocomplete: React.FC<{
+//   value: string;
+//   onValueChange: (value: string) => void;
+//   onCustomerSelect: (customer: CustomerDetails) => void;
+//   searchFunction: (query: string) => Promise<CustomerDetails[]>;
+//   error?: string;
+// }> = ({ value, onValueChange, onCustomerSelect, searchFunction, error }) => {
+//   const [suggestions, setSuggestions] = useState<CustomerDetails[]>([]);
+//   const [showSuggestions, setShowSuggestions] = useState(false);
+//   const [isSearching, setIsSearching] = useState(false);
+//   const [hasManuallySelected, setHasManuallySelected] = useState(false);
+
+//   const debounce = useDebounce();
+
+//   const performSearch = useCallback(
+//     async (searchText: string) => {
+//       if (searchText.length < 3) {
+//         setSuggestions([]);
+//         setShowSuggestions(false);
+//         setIsSearching(false);
+//         return;
+//       }
+
+//       try {
+//         const results = await searchFunction(searchText);
+//         const validResults = results.filter((r) => r.buyer_name);
+//         setSuggestions(validResults);
+//         setShowSuggestions(validResults.length > 0);
+//       } catch (error) {
+//         console.error('Customer search error:', error);
+//         setSuggestions([]);
+//         setShowSuggestions(false);
+//       } finally {
+//         setIsSearching(false);
+//       }
+//     },
+//     [searchFunction]
+//   );
+
+//   const debouncedSearch = useCallback(debounce(performSearch, 800), [performSearch]);
+
+//   const handleTextChange = useCallback(
+//     (text: string) => {
+//       onValueChange(text);
+
+//       if (hasManuallySelected) {
+//         setHasManuallySelected(false);
+//       }
+
+//       if (text.length < 3) {
+//         setShowSuggestions(false);
+//         setSuggestions([]);
+//         setIsSearching(false);
+//         return;
+//       }
+
+//       setIsSearching(true);
+//       debouncedSearch(text);
+//     },
+//     [onValueChange, hasManuallySelected, debouncedSearch]
+//   );
+
+//   const handleFocus = useCallback(() => {
+//     if (!hasManuallySelected && suggestions.length > 0 && value.length >= 3) {
+//       setShowSuggestions(true);
+//     }
+//   }, [hasManuallySelected, suggestions.length, value.length]);
+
+//   const handleBlur = useCallback(() => {
+//     setTimeout(() => setShowSuggestions(false), 200);
+//   }, []);
+
+//   const selectCustomer = useCallback(
+//     (customer: CustomerDetails) => {
+//       onCustomerSelect(customer);
+//       setShowSuggestions(false);
+//       setSuggestions([]);
+//       setHasManuallySelected(true);
+//       setIsSearching(false);
+//       Keyboard.dismiss();
+//     },
+//     [onCustomerSelect]
+//   );
+// useEffect(() => {
+//     const keyboardDidHide = Keyboard.addListener('keyboardDidHide', () => {
+//       setShowSuggestions(false);
+//     });
+//     return () => keyboardDidHide.remove();
+//   }, []);
+
+//   return (
+//     <View className="mb-4">
+//       <View
+//         className={`flex-row items-center bg-slate-50 border ${
+//           error ? 'border-red-300' : 'border-slate-200'
+//         } rounded-xl px-4 py-3`}
+//       >
+//         <Briefcase color="#64748B" size={20} />
+//         <TextInput
+//           className="flex-1 ml-3 text-slate-800 font-medium text-base"
+//           placeholder="Customer / Business Name *"
+//           placeholderTextColor="#94A3B8"
+//           value={value}
+//           onChangeText={handleTextChange}
+//           onFocus={handleFocus}
+//           onBlur={handleBlur}
+//           autoCapitalize="words"
+//           autoCorrect={false}
+//         />
+//         {isSearching && (
+//           <View className="ml-2">
+//             <ActivityIndicator size="small" color="#4F46E5" />
+//           </View>
+//         )}
+//       </View>
+
+//       {!hasManuallySelected && value.length > 0 && value.length < 3 && (
+//         <Text className="text-slate-400 text-xs mt-1.5 ml-1">
+//           💡 Type at least 3 characters to search previous customers
+//         </Text>
+//       )}
+
+//       {error && (
+//         <Text className="text-red-500 text-xs mt-1.5 ml-1 font-medium">⚠️ {error}</Text>
+//       )}
+
+//       {showSuggestions && suggestions.length > 0 && (
+//         <View className="mt-2 bg-white border border-indigo-200 rounded-xl shadow-2xl max-h-64 overflow-hidden">
+//           <View className="px-3 py-2 bg-indigo-50 border-b border-indigo-100">
+//             <Text className="text-indigo-600 text-xs font-bold uppercase tracking-wide">
+//               📋 Previous Customers ({suggestions.length})
+//             </Text>
+//           </View>
+//           <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+//             {suggestions.map((suggestion, index) => (
+//               <TouchableOpacity
+//                 key={`${suggestion.buyer_name}-${suggestion.phone}-${index}`}
+//                 onPress={() => selectCustomer(suggestion)}
+//                 className="p-4 border-b border-slate-100 active:bg-indigo-50"
+//                 activeOpacity={0.7}
+//               >
+//                 <View className="flex-row items-start justify-between">
+//                   <View className="flex-1 mr-3">
+//                     <Text className="text-slate-900 font-bold text-base mb-1.5">
+//                       {suggestion.buyer_name}
+//                     </Text>
+//                     {suggestion.phone && (
+//                       <View className="flex-row items-center mb-1">
+//                         <View className="bg-green-100 rounded-full px-2.5 py-1">
+//                           <Text className="text-green-700 text-xs font-bold">📱 {suggestion.phone}</Text>
+//                         </View>
+//                       </View>
+//                     )}
+//                     {suggestion.address && (
+//                       <Text className="text-slate-500 text-sm mt-1" numberOfLines={2}>
+//                         📍 {suggestion.address}
+//                       </Text>
+//                     )}
+//                   </View>
+//                   <View className="bg-indigo-600 rounded-full p-2 mt-1">
+//                     <CheckCircle size={18} color="white" strokeWidth={2.5} />
+//                   </View>
+//                 </View>
+//               </TouchableOpacity>
+//             ))}
+//           </ScrollView>
+//         </View>
+//       )}
+//     </View>
+//   );
+// };
+
+
+// // Customer Details Form
+// const CustomerDetailsForm: React.FC<{
+//   customer: CustomerDetails;
+//   onCustomerChange: (customer: CustomerDetails) => void;
+//   searchCustomers: (query: string) => Promise<CustomerDetails[]>;
+//   errors: ValidationErrors;
+// }> = ({ customer, onCustomerChange, searchCustomers, errors }) => {
+//   const handleNameChange = (name: string) => {
+//     onCustomerChange({ ...customer, buyer_name: name });
+//   };
+
+//   const handleCustomerSelect = (selectedCustomer: CustomerDetails) => {
+//     onCustomerChange(selectedCustomer);
+//   };
+
+//   const handlePhoneChange = (text: string) => {
+//     const digitsOnly = text.replace(/\D/g, '').slice(0, 10);
+//     onCustomerChange({ ...customer, phone: digitsOnly });
+//   };
+
+//   const handleAddressChange = (text: string) => {
+//     onCustomerChange({ ...customer, address: text });
+//   };
+
+//   return (
+//     <View className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+//       <View className="flex-row items-center mb-4">
+//         <View className="p-2 rounded-lg bg-indigo-50 mr-3">
+//           <User color="#4F46E5" size={20} strokeWidth={2.5} />
+//         </View>
+//         <Text className="text-slate-800 font-bold text-lg tracking-tight">Customer Details</Text>
+//       </View>
+
+//       {/* Name with Autocomplete */}
+//       <CustomerAutocomplete
+//         value={customer.buyer_name}
+//         onValueChange={handleNameChange}
+//         onCustomerSelect={handleCustomerSelect}
+//         searchFunction={searchCustomers}
+//         error={errors.customerName}
+//       />
+// <View className="flex-row items-start bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-4">
+//         <MapPin color="#64748B" size={20} style={{ marginTop: 6 }} />
+//         <TextInput
+//           className="flex-1 ml-3 text-slate-800 font-medium text-base"
+//           placeholder="Delivery Address"
+//           placeholderTextColor="#94A3B8"
+//           multiline
+//           numberOfLines={3}
+//           value={customer.address}
+//           onChangeText={handleAddressChange}
+//           textAlignVertical="top"
+//           autoComplete="off"
+//         />
+//       </View>
+//       {/* FIXED: Phone Input with Autocomplete Prevention */}
+//       <View className="mb-4">
+//         <View
+//           className={`flex-row items-center bg-slate-50 border ${
+//             errors.customerPhone ? 'border-red-300' : 'border-slate-200'
+//           } rounded-xl px-4 py-3`}
+//         >
+//           <Smartphone color="#64748B" size={20} />
+//           <TextInput
+//             className="flex-1 ml-3 text-slate-800 font-medium text-base"
+//             placeholder="Phone Number (10 digits)"
+//             placeholderTextColor="#94A3B8"
+//             keyboardType="number-pad"
+//             maxLength={10}
+//             value={customer.phone}
+//             onChangeText={handlePhoneChange}
+//             // CRITICAL FIXES for Android autocomplete issue
+//             autoComplete="off"
+//             textContentType="none"
+//             importantForAutofill="no"
+//             autoCorrect={false}
+//             // Additional Android-specific props
+//             {...Platform.select({
+//               android: {
+//                 importantForAutofill: 'no',
+//                 autoComplete: 'off',
+//               },
+//             })}
+//           />
+//         </View>
+//         {errors.customerPhone && (
+//           <Text className="text-red-500 text-xs mt-1.5 ml-1 font-medium">⚠️ {errors.customerPhone}</Text>
+//         )}
+//       </View>
+
+//       {/* Address */}
+      
+//     </View>
+//   );
+// };
+// // Bill Item Card
+
+
+// // Product Search Modal
+// const ProductSearchModal: React.FC<{
+//   visible: boolean;
+//   products: Product[];
+//   onClose: () => void;
+//   onSelectProduct: (product: Product) => void;
+// }> = ({ visible, products, onClose, onSelectProduct }) => {
+//   const [searchQuery, setSearchQuery] = useState('');
+
+//   const filteredProducts = useMemo(() => {
+//     if (!searchQuery.trim()) return products;
+//     const query = searchQuery.toLowerCase();
+//     return products.filter(
+//       (p) => p.name.toLowerCase().includes(query) || p.name_english.toLowerCase().includes(query)
+//     );
+//   }, [searchQuery, products]);
+
+//   const handleSelectProduct = (product: Product) => {
+//     onSelectProduct(product);
+//     setSearchQuery('');
+//   };
+
+//   const handleClose = () => {
+//     setSearchQuery('');
+//     onClose();
+//   };
+
+//   return (
+//     <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
+//       <View className="flex-1 bg-slate-900/60 justify-end">
+//         <TouchableOpacity className="flex-1" onPress={handleClose} activeOpacity={1} />
+
+//         <View className="bg-slate-50 h-[75%] rounded-t-[32px] overflow-hidden">
+//           <View className="w-full items-center pt-3 pb-2 bg-white">
+//             <View className="w-12 h-1.5 bg-slate-300 rounded-full" />
+//           </View>
+
+//           <View className="px-5 pb-4 bg-white border-b border-slate-100">
+//             <Text className="text-xl font-black text-slate-800 mb-4">Select Product</Text>
+
+//             <View className="flex-row items-center bg-slate-100 rounded-xl px-4 h-12">
+//               <Search color="#94A3B8" size={20} />
+//               <TextInput
+//                 className="flex-1 ml-3 text-slate-800 font-medium text-base"
+//                 placeholder="Search products..."
+//                 placeholderTextColor="#94A3B8"
+//                 value={searchQuery}
+//                 onChangeText={setSearchQuery}
+//                 autoFocus
+//               />
+//               {searchQuery.length > 0 && (
+//                 <TouchableOpacity onPress={() => setSearchQuery('')} activeOpacity={0.7}>
+//                   <X size={18} color="#94A3B8" />
+//                 </TouchableOpacity>
+//               )}
+//             </View>
+//           </View>
+
+//           <ScrollView
+//             className="flex-1 px-5 pt-4"
+//             contentContainerStyle={{ paddingBottom: 40 }}
+//             keyboardShouldPersistTaps="handled"
+//             showsVerticalScrollIndicator={false}
+//           >
+//             {filteredProducts.length > 0 ? (
+//               filteredProducts.map((item) => (
+//                 <TouchableOpacity
+//                   key={item.id}
+//                   onPress={() => handleSelectProduct(item)}
+//                   className="bg-white p-4 rounded-2xl mb-3 border border-slate-100 shadow-sm flex-row justify-between items-center active:scale-[0.98]"
+//                   activeOpacity={0.7}
+//                 >
+//                   <View className="flex-1 mr-3">
+//                     <Text className="text-slate-800 font-bold text-base mb-0.5">{item.name}</Text>
+//                     <Text className="text-slate-500 text-sm mb-2">{item.name_english}</Text>
+//                     {item.weight && (
+//                       <View className="bg-slate-100 px-2 py-0.5 rounded self-start">
+//                         <Text className="text-slate-600 text-xs font-bold">{item.weight}</Text>
+//                       </View>
+//                     )}
+//                   </View>
+//                   <View className="items-end">
+//                     <Text className="text-lg font-black text-slate-800">₹{item.price}</Text>
+//                     <View className="bg-indigo-600 rounded-full p-1 mt-1">
+//                       <Plus size={16} color="white" />
+//                     </View>
+//                   </View>
+//                 </TouchableOpacity>
+//               ))
+//             ) : (
+//               <View className="items-center py-10 opacity-50">
+//                 <Package size={48} color="#94A3B8" />
+//                 <Text className="text-slate-500 font-medium mt-4">
+//                   {searchQuery ? 'No products found' : 'No products available'}
+//                 </Text>
+//               </View>
+//             )}
+//           </ScrollView>
+//         </View>
+//       </View>
+//     </Modal>
+//   );
+// };
+
+// // Bill Footer
+// const BillFooter: React.FC<{
+//   totalAmount: number;
+//   itemCount: number;
+//   onSave: () => void;
+//   isSaving: boolean;
+// }> = ({ totalAmount, itemCount, onSave, isSaving }) => {
+//   return (
+//     <View className="absolute bottom-0 w-full bg-white border-t border-slate-200 pb-6 pt-4 px-5 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] rounded-t-3xl">
+//       <View className="flex-row justify-between items-end mb-4">
+//         <View>
+//           <Text className="text-slate-400 text-xs font-bold uppercase tracking-wide mb-1">Total Amount</Text>
+//           <Text className="text-slate-900 text-3xl font-black tracking-tight">₹{totalAmount.toFixed(2)}</Text>
+//         </View>
+//         <View className="bg-green-100 px-3 py-1 rounded-full">
+//           <Text className="text-green-700 text-xs font-bold">
+//             {itemCount} {itemCount === 1 ? 'Item' : 'Items'}
+//           </Text>
+//         </View>
+//       </View>
+
+//       <TouchableOpacity
+//         onPress={onSave}
+//         disabled={isSaving}
+//         className={`w-full py-4 rounded-2xl flex-row items-center justify-center shadow-lg ${
+//           isSaving ? 'bg-indigo-400' : 'bg-indigo-600 active:bg-indigo-700'
+//         } shadow-indigo-200`}
+//         activeOpacity={0.8}
+//       >
+//         {isSaving ? (
+//           <ActivityIndicator color="white" />
+//         ) : (
+//           <>
+//             <Text className="text-white font-bold text-lg mr-2">Generate Invoice</Text>
+//             <FileText color="white" size={20} strokeWidth={2.5} />
+//           </>
+//         )}
+//       </TouchableOpacity>
+//     </View>
+//   );
+// };
+
+
+// const CreateBillScreen = () => {
+//   const navigation = useNavigation<NavigationProps>();
+
+//   // Custom hook for bill form logic
+//   const {
+//     customer,
+//     billItems,
+//     errors,
+//     subTotal,
+//     itemCount,
+//     updateCustomer,
+//     addBillItem,
+//     removeBillItem,
+//     updateBillItemQuantity,
+//     updateBillItemPrice,
+//     selectProductForItem,
+//     validateForm,
+//     buildBillPayload,
+//   } = useBillForm();
+
+//   // Local state
+//   const [invoiceNo, setInvoiceNo] = useState('');
+//   const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
+//   const [isLoading, setIsLoading] = useState(true);
+//   const [isSaving, setIsSaving] = useState(false);
+//   const [showProductModal, setShowProductModal] = useState<string | null>(null);
+
+//   // Animation refs
+//   const fadeAnim = useRef(new Animated.Value(0)).current;
+//   const slideUpAnim = useRef(new Animated.Value(100)).current;
+
+//   // Initialize animations
+//   useEffect(() => {
+//     Animated.parallel([
+//       Animated.timing(fadeAnim, {
+//         toValue: 1,
+//         duration: 800,
+//         useNativeDriver: true,
+//       }),
+//       Animated.timing(slideUpAnim, {
+//         toValue: 0,
+//         duration: 600,
+//         useNativeDriver: true,
+//       }),
+//     ]).start();
+//   }, []);
+
+//   // Load initial data
+//   useEffect(() => {
+//     loadInitialData();
+//   }, []);
+
+//   const loadInitialData = async () => {
+//     setIsLoading(true);
+//     try {
+//       const [invoice, products] = await Promise.all([getNextInvoice(), getProduct()]);
+
+//       if (invoice) setInvoiceNo(invoice);
+//       setAvailableProducts(products || []);
+//     } catch (err) {
+//       Toast.error('Failed to load initial data');
+//       console.error('Load error:', err);
+//     } finally {
+//       setIsLoading(false);
+//     }
+//   };
+
+//   // Search customers function for autocomplete
+//   const handleSearchCustomers = async (query: string): Promise<CustomerDetails[]> => {
+//     try {
+//       const results = await searchCustomers(query);
+//       return (results || []).map((result) => ({
+//         buyer_name: result.buyer_name || '',
+//         phone: result.phone || '',
+//         email: result.email || '',
+//         address: result.address || '',
+//       }));
+//     } catch (error) {
+//       console.error('Customer search error:', error);
+//       return [];
+//     }
+//   };
+
+//   // Handle product selection
+//   const handleSelectProduct = (product: Product) => {
+//     if (showProductModal) {
+//       selectProductForItem(showProductModal, product);
+//       setShowProductModal(null);
+//     }
+//   };
+
+//   // Handle save bill
+//   const handleSaveBill = async () => {
+//     const isValid = validateForm();
+
+//     if (!isValid) {
+//       const errorMessages = Object.entries(errors)
+//         .filter(([key, msg]) => msg)
+//         .map(([_, msg]) => msg)
+//         .join('\n');
+
+//       Toast.error(errorMessages || 'Please check the form for errors.');
+//       return;
+//     }
+
+//     setIsSaving(true);
+//     Keyboard.dismiss();
+
+//     try {
+//       const payload = buildBillPayload();
+//       await saveBill(payload);
+
+//       Toast.success('Bill generated successfully!');
+
+//       setTimeout(() => {
+//         setIsSaving(false);
+//         navigation.navigate('HomeScreen');
+//       }, 1000);
+//     } catch (error) {
+//       console.error('Save bill error:', error);
+//       Toast.error('Failed to save bill. Please try again.');
+//       setIsSaving(false);
+//     }
+//   };
+
+//   // Loading state
+//   if (isLoading) {
+//     return (
+//       <View className="flex-1 bg-white justify-center items-center">
+//         <ActivityIndicator size="large" color="#4F46E5" />
+//         <Text className="text-slate-500 mt-4 font-medium tracking-wide">Preparing Dashboard...</Text>
+//       </View>
+//     );
+//   }
+
+//   // Main render
+//   return (
+//     <SafeAreaView className="flex-1 bg-slate-50">
+//       <StatusBar barStyle="dark-content" backgroundColor="#0F172A" />
+//       <ToastNotification />
+
+//       {/* Header */}
+//       <View className="bg-blue-900 pb-6 pt-2 px-6 shadow-lg z-10">
+//         <View className="flex-row justify-between items-start">
+//           <View>
+//             <Text className="text-slate-400 text-xs font-bold tracking-widest uppercase mb-1">New Invoice</Text>
+//             <Text className="text-white text-2xl font-black tracking-tight">Create Bill</Text>
+//             <Text className="text-white text-sm font-medium mt-1">{COMPANY_DETAILS.name}</Text>
+//           </View>
+//           <View className="items-end justify-center my-auto">
+//             <View className="bg-indigo-600/20 px-3 py-1 rounded-full border border-indigo-500/30 mb-1 my-auto">
+//               <Text className="text-indigo-300 text-lg font-bold">{invoiceNo || 'Loading...'}</Text>
+//             </View>
+//           </View>
+//         </View>
+//       </View>
+
+//       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
+//         <ScrollView
+//           className="flex-1"
+//           showsVerticalScrollIndicator={false}
+//           contentContainerStyle={{ paddingBottom: 140 }}
+//           keyboardShouldPersistTaps="handled"
+//         >
+//           <Animated.View
+//             style={{
+//               opacity: fadeAnim,
+//               transform: [{ translateY: slideUpAnim }],
+//             }}
+//             className="px-5 pt-6 space-y-6"
+//           >
+//             {/* Customer Details Section */}
+//             <CustomerDetailsForm
+//               customer={customer}
+//               onCustomerChange={updateCustomer}
+//               searchCustomers={handleSearchCustomers}
+//               errors={errors}
+//             />
+
+//             {/* Bill Items Section */}
+//             <BillItemsSection
+//               billItems={billItems}
+//               onAddItem={addBillItem}
+//               onDeleteItem={removeBillItem}
+//               onSelectProduct={(id) => setShowProductModal(id)}
+//               handleQuantityChange={updateBillItemQuantity}
+//               onPriceChange={updateBillItemPrice}
+//               errors={errors}
+//             />
+
+//             <View className="h-6" />
+//           </Animated.View>
+//         </ScrollView>
+//       </KeyboardAvoidingView>
+
+//       {/* Sticky Footer */}
+//       <BillFooter totalAmount={subTotal} itemCount={itemCount} onSave={handleSaveBill} isSaving={isSaving} />
+
+//       {/* Product Search Modal */}
+//       <ProductSearchModal
+//         visible={showProductModal !== null}
+//         products={availableProducts}
+//         onClose={() => setShowProductModal(null)}
+//         onSelectProduct={handleSelectProduct}
+//       />
+//     </SafeAreaView>
+//   );
+// };
+
+// export default CreateBillScreen;
+
+
+// screens/CreateBillScreen.tsx

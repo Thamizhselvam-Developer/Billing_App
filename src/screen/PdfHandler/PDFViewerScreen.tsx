@@ -47,7 +47,7 @@ interface Bill {
 }
 
 const PDFViewerScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const route = useRoute();
   const { bill } = route.params as { bill: Bill };
 
@@ -212,7 +212,7 @@ console.log(fullUrl)
                 },
               }
             : null,
-        ].filter(Boolean)
+        ].filter(Boolean) as any
       );
     } catch (error) {
       console.error('Download error:', error);

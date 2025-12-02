@@ -1,14 +1,58 @@
-import { useCallback, useState } from "react";
-import { CustomerDetails } from "../../types_interface/Bill/Bill.type";
-import { Text } from "react-native";
+// components/CustomerAutocomplete.tsx
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+  Keyboard,
+} from 'react-native';
+import { Briefcase, CheckCircle } from 'lucide-react-native';
 
-export const CustomerAutocomplete: React.FC<{
+interface CustomerDetails {
+  buyer_name: string;
+  phone: string;
+  email: string;
+  address: string;
+}
+
+interface CustomerAutocompleteProps {
   value: string;
   onValueChange: (value: string) => void;
   onCustomerSelect: (customer: CustomerDetails) => void;
   searchFunction: (query: string) => Promise<CustomerDetails[]>;
   error?: string;
-}> = ({ value, onValueChange, onCustomerSelect, searchFunction, error }) => {
+}
+
+// Debounce Hook
+const useDebounce = () => {
+  const timeoutRef = useRef<number | null>(null);
+
+  const debounce = useCallback((func: Function, delay: number) => {
+    return (...args: any[]) => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => func(...args), delay) as unknown as number;
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  return debounce;
+};
+
+export const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
+  value,
+  onValueChange,
+  onCustomerSelect,
+  searchFunction,
+  error,
+}) => {
   const [suggestions, setSuggestions] = useState<CustomerDetails[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -41,7 +85,10 @@ export const CustomerAutocomplete: React.FC<{
     [searchFunction]
   );
 
-  const debouncedSearch = useCallback(debounce(performSearch, 800), [performSearch]);
+  const debouncedSearch = useCallback(
+    debounce(performSearch, 800),
+    [performSearch]
+  );
 
   const handleTextChange = useCallback(
     (text: string) => {
@@ -85,13 +132,7 @@ export const CustomerAutocomplete: React.FC<{
     },
     [onCustomerSelect]
   );
-const navigation = useNavigation<NavigationProps>();
- useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
-      // Prevent default behavior if needed
-    });
-    return unsubscribe;
-  }, [navigation]);
+
   useEffect(() => {
     const keyboardDidHide = Keyboard.addListener('keyboardDidHide', () => {
       setShowSuggestions(false);
@@ -132,7 +173,9 @@ const navigation = useNavigation<NavigationProps>();
       )}
 
       {error && (
-        <Text className="text-red-500 text-xs mt-1.5 ml-1 font-medium">⚠️ {error}</Text>
+        <Text className="text-red-500 text-xs mt-1.5 ml-1 font-medium">
+          ⚠️ {error}
+        </Text>
       )}
 
       {showSuggestions && suggestions.length > 0 && (
@@ -142,7 +185,11 @@ const navigation = useNavigation<NavigationProps>();
               📋 Previous Customers ({suggestions.length})
             </Text>
           </View>
-          <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <ScrollView
+            nestedScrollEnabled
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
             {suggestions.map((suggestion, index) => (
               <TouchableOpacity
                 key={`${suggestion.buyer_name}-${suggestion.phone}-${index}`}
@@ -158,7 +205,9 @@ const navigation = useNavigation<NavigationProps>();
                     {suggestion.phone && (
                       <View className="flex-row items-center mb-1">
                         <View className="bg-green-100 rounded-full px-2.5 py-1">
-                          <Text className="text-green-700 text-xs font-bold">📱 {suggestion.phone}</Text>
+                          <Text className="text-green-700 text-xs font-bold">
+                            📱 {suggestion.phone}
+                          </Text>
                         </View>
                       </View>
                     )}
